@@ -34,7 +34,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "1.8_2"; 
+	String versionNumber = "0.2_1"; 
 	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File plugin, ClassLoader cLoader) {
