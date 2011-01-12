@@ -1,32 +1,45 @@
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.javainetlocator.InetAddressLocator;
+import net.sf.javainetlocator.InetAddressLocatorException;
+
 import org.bukkit.Player;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityListener;
+import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+@SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
 	public rPropertiesFile Messages;
-	PlayerListener listener = new rTriggersListener(this);
+	
+	PlayerListener listener = new rTriggersPlayerListener(this);
+	EntityListener listener2 = new rTriggersEntityListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer = getServer();
+	public iData data;
 	Timer scheduler;
+	
+	
 	String defaultGroup = "default";
 	String versionNumber = "1.8_2"; 
-	public iData data;
+	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, plugin, cLoader);
-        Messages = new rPropertiesFile("rMotD.properties");
+        Messages = new rPropertiesFile("rTriggers.properties");
         registerEvents();
     }
 	
@@ -41,6 +54,10 @@ public class rTriggers extends JavaPlugin {
 //		etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
 //		etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 //		etc.getLoader().addListener(PluginLoader.Hook.HEALTH_CHANGE, listener, this, PluginListener.Priority.MEDIUM);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGED, listener2, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, listener2, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, listener2, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DEATH, listener2, Event.Priority.Monitor, this);
 //		etc.getInstance().addCommand("/grouptell", "Tell members of a group something.");
 //		etc.getInstance().addCommand("/rmotd", "Displays your Message of the Day");
 	} 
@@ -155,8 +172,24 @@ public class rTriggers extends JavaPlugin {
 						if (data != null){
 							balance = data.getBalance(triggerMessage.getName());
 						}
-						String [] replace = {"@"	, "<<triggerer>>"         /* , "<<triggerer-ip>>"    , "<<triggerer-color>>"   */, "<<triggerer-balance>>"  , "<<player-list>>"};
-						String [] with    = {"\n"	, triggerMessage.getName()/* , triggerMessage.getIP(),triggerMessage.getColor()*/, Integer.toString(balance), playerList};					
+						InetSocketAddress triggerIP = triggerMessage.getAddress();
+						String triggerCountry;
+						String triggerLocale;
+						try {
+							Locale playersHere = InetAddressLocator.getLocale(triggerIP.getAddress());
+							triggerCountry = playersHere.getDisplayCountry();
+							triggerLocale = playersHere.getDisplayName();
+						} catch (InetAddressLocatorException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							triggerCountry = "";
+							triggerLocale = "";
+						} catch (NoClassDefFoundError e){
+							triggerCountry = "";
+							triggerLocale = "";
+						}
+						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", /*"<<triggerer-color>>"   ,*/ "<<triggerer-balance>>"  , "<<player-list>>"};
+						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerCountry,           triggerLocale,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList};					
 						message = MessageParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
 							message = MessageParser.parseMessage(message, eventToReplace, eventReplaceWith);
@@ -209,10 +242,12 @@ public class rTriggers extends JavaPlugin {
 				String twitterMessage = MessageParser.parseMessage(message, replace, with);
 				etc.getLoader().callCustomHook("tweet", new Object[] {twitterMessage});
 			}*/
-			/*else if (group.equalsIgnoreCase("<<command>>")) {
+			/*
+			else if (group.equalsIgnoreCase("<<command>>")) {
 				if (triggerer != null) {
-					String command = message.substring(message.indexOf('/'));
-					triggerer.command(command);
+					//String command = message.substring(message.indexOf('/'));
+					// PlayerChatEvent useCommand = new PlayerChatEvent(Event.Type.PLAYER_COMMAND,triggerer, command);
+					// TODO
 				}
 			}*/ else if (group.substring(0,9).equalsIgnoreCase("<<player|")){
 				String playerName = group.substring(9, group.length()-2);

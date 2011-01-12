@@ -6,7 +6,7 @@ import org.bukkit.event.player.PlayerListener;
 
 
 @SuppressWarnings("unused")
-public class rTriggersListener extends PlayerListener {
+public class rTriggersPlayerListener extends PlayerListener {
 	/**
 	 * 
 	 */
@@ -15,7 +15,7 @@ public class rTriggersListener extends PlayerListener {
 	/**
 	 * @param rMotD
 	 */
-	rTriggersListener(rTriggers rMotD) {
+	rTriggersPlayerListener(rTriggers rMotD) {
 		this.rMotD = rMotD;
 	}
 
