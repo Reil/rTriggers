@@ -189,7 +189,7 @@ public class rTriggers extends JavaPlugin {
 							triggerLocale = "";
 						}
 						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", /*"<<triggerer-color>>"   ,*/ "<<triggerer-balance>>"  , "<<player-list>>"};
-						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerCountry,           triggerLocale,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList};					
+						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList};					
 						message = MessageParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
 							message = MessageParser.parseMessage(message, eventToReplace, eventReplaceWith);
@@ -306,8 +306,24 @@ public class rTriggers extends JavaPlugin {
 		if (data != null){
 			balance = data.getBalance(recipient.getName());
 		}
-		String [] replace = {"<<recipient>>"    , "<<recipient-ip>>" , "<<recipient-color>>", "<<recipient-balance>>"};
-		String [] with    = {recipient.getName(), /*recipient.getIP()*/""  , ""/*recipient.getColor()*/ , Integer.toString(balance)};
+		InetSocketAddress recipientIP = recipient.getAddress(); 
+		String recipientCountry;
+		String recipientLocale;
+		try {
+			Locale playersHere = InetAddressLocator.getLocale(recipientIP.getAddress());
+			recipientCountry = playersHere.getDisplayCountry();
+			recipientLocale = playersHere.getDisplayName();
+		} catch (InetAddressLocatorException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			recipientCountry = "";
+			recipientLocale = "";
+		} catch (NoClassDefFoundError e){
+			recipientCountry = "";
+			recipientLocale = "";
+		}
+		String [] replace = {"<<recipient>>"    , "<<recipient-ip>>"    , "recipient-locale", "<<recipient-country>>", "<<recipient-color>>", "<<recipient-balance>>"};
+		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Integer.toString(balance)};
 		message = MessageParser.parseMessage(message, replace, with);
 		/* Tag replacement end. */
 		for(String send : message.split("\n"))
