@@ -13,6 +13,8 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import com.reil.bukkit.rParser.MessageParser;
+
 public class rPropertiesFile {
 	Hashtable<String,ArrayList<String>> Properties = new Hashtable<String,ArrayList<String>>(); 
 	String fileName;

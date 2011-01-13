@@ -3,6 +3,8 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.reil.bukkit.rParser.MessageParser;
+
 public class rTriggersTimer extends TimerTask{
 	String [] Messages;
 	rTriggers rMotD;

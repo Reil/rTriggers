@@ -22,6 +22,8 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.reil.bukkit.rParser.MessageParser;
+
 @SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
 	public rPropertiesFile Messages;

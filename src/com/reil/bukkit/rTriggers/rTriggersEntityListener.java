@@ -3,9 +3,9 @@ import org.bukkit.event.entity.*;
 
 
 public class rTriggersEntityListener extends EntityListener{
-	private final rTriggers rMotD;
-	rTriggersEntityListener(rTriggers rMotD) {
-		this.rMotD = rMotD;
+	private final rTriggers rTriggers;
+	rTriggersEntityListener(rTriggers rTriggers) {
+		this.rTriggers = rTriggers;
 	}
 	public void onEntityDamagedByBlock (EntityDamagedByBlockEvent event){
 		triggerDamage(event);
