@@ -1,3 +1,4 @@
+package com.reil.bukkit.rTriggers;
 import org.bukkit.Color;
 import org.bukkit.Player;
 import org.bukkit.event.player.PlayerChatEvent;

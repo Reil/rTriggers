@@ -1,3 +1,4 @@
+package com.reil.bukkit.rTriggers;
 import java.io.*;
 import java.sql.*;
 import java.util.logging.Level;
