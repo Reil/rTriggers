@@ -3,11 +3,11 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.reil.bukkit.rParser.MessageParser;
+import com.reil.bukkit.rParser.rParser;
 
 public class rTriggersTimer extends TimerTask{
 	String [] Messages;
-	rTriggers rMotD;
+	rTriggers rTriggers;
 	Timer timer;
 	private int progression;
 	Random generator;
@@ -16,9 +16,9 @@ public class rTriggersTimer extends TimerTask{
 	int nextMessage = 0;
 	int delay;
 	// Listname, delay, progression
-	public rTriggersTimer(rTriggers rMotD, Timer timer, String [] Messages){
+	public rTriggersTimer(rTriggers rTriggers, Timer timer, String [] Messages){
 		this.Messages = Messages;
-		this.rMotD = rMotD;
+		this.rTriggers = rTriggers;
 		this.timer = timer;
 		this.generator = new Random();
 		String [] split =  Messages[0].split(":");
@@ -38,7 +38,7 @@ public class rTriggersTimer extends TimerTask{
 	
 	public rTriggersTimer clone(){
 		rTriggersTimer clone = new rTriggersTimer();
-		clone.rMotD = this.rMotD;
+		clone.rTriggers = this.rTriggers;
 		clone.Messages = this.Messages;
 		clone.nextMessage = this.nextMessage;
 		clone.generator = this.generator;
@@ -57,14 +57,14 @@ public class rTriggersTimer extends TimerTask{
 		try{
 			delay = new Integer(options[1]) * 1000;
 		} catch (NumberFormatException blargh){
-			rMotD.log.info("[rMotD] Invalid timer interval!");
+			rTriggers.log.info("[rTriggers] Invalid timer interval!");
 			return;
 		}
-		String message = MessageParser.combineSplit(2, split, ":");
+		String message = rParser.combineSplit(2, split, ":");
 
 		// Send message
 		String [] sendToGroups = Groups.split(",");
-		rMotD.sendToGroups(sendToGroups, message, null);
+		rTriggers.sendToGroups(sendToGroups, message, null);
 		
 		// Find next sequence
 		if (progression == random) {

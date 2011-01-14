@@ -13,7 +13,7 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import com.reil.bukkit.rParser.MessageParser;
+import com.reil.bukkit.rParser.rParser;
 
 public class rPropertiesFile {
 	Hashtable<String,ArrayList<String>> Properties = new Hashtable<String,ArrayList<String>>(); 
@@ -66,7 +66,7 @@ public class rPropertiesFile {
 	    		String [] split = line.split("=");
 	    		if (split.length >= 2){
 	        		String PropertySide = split[0];
-	        		String Value = MessageParser.combineSplit(1, split, "=");
+	        		String Value = rParser.combineSplit(1, split, "=");
 	        		for (String Property : PropertySide.split(",")) {
 		        		if (Properties.containsKey(Property)){
 		        			Properties.get(Property).add(Value);

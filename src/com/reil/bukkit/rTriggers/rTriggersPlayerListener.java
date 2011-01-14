@@ -11,30 +11,30 @@ public class rTriggersPlayerListener extends PlayerListener {
 	/**
 	 * 
 	 */
-	private final rTriggers rMotD;
+	private final rTriggers rTriggers;
 
 	/**
-	 * @param rMotD
+	 * @param rTriggers
 	 */
-	rTriggersPlayerListener(rTriggers rMotD) {
-		this.rMotD = rMotD;
+	rTriggersPlayerListener(rTriggers rTriggers) {
+		this.rTriggers = rTriggers;
 	}
 
 	public void onPlayerJoin(PlayerEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rMotD.triggerMessagesWithOption(triggerMessage, "onlogin");
+		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin");
 		return;
 	}
 	
 	public void onPlayerQuit(PlayerEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rMotD.triggerMessagesWithOption(triggerMessage, "ondisconnect");
+		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
 		return;
 	}
 	/*
 	public boolean onHealthChange(Player triggerMessage, int oldValue, int newValue){
 		if (newValue <= 0) {
-			this.rMotD.triggerMessagesWithOption(triggerMessage, "ondeath");
+			this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondeath");
 		}
 		return false;
 	}
@@ -42,15 +42,15 @@ public class rTriggersPlayerListener extends PlayerListener {
 	public void onBan(Player mod, Player triggerMessage, java.lang.String reason) {
 		String [] replaceThese = {"<<ban-reason>>", "<<ban-setter>>", "<<ban-recipient>>"     };
 		String [] withThese =    {reason          , mod.getName()   , triggerMessage.getName()};
-		this.rMotD.triggerMessagesWithOption(triggerMessage, "onban", replaceThese, withThese);
+		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onban", replaceThese, withThese);
 	}*/
 	
 	public void onPlayerCommand(PlayerChatEvent event){
 		Player player = event.getPlayer();
 		String [] split = event.getMessage().split(" ");
 		
-		this.rMotD.triggerMessagesWithOption(player, "oncommand:" + split[0]);
-		this.rMotD.triggerMessagesWithOption(player, "oncommand|" + split[0]);
+		this.rTriggers.triggerMessagesWithOption(player, "oncommand:" + split[0]);
+		this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0]);
 		/*
         if (split[0].equalsIgnoreCase("/grouptell")){
         	Group iShouldExist;
@@ -58,15 +58,15 @@ public class rTriggersPlayerListener extends PlayerListener {
 	        	String tag =  "<" + player.getColor() + player.getName() + Color.WHITE + " to §" + iShouldExist.Prefix.charAt(0) + iShouldExist.Name + Color.WHITE + "> ";
 	        	String message = tag + MessageParser.combineSplit(2, split, " ");
 	        	String [] functionParam = {split[1], player.getName()};
-	        	this.rMotD.sendToGroups(functionParam, message,player);
+	        	this.rTriggers.sendToGroups(functionParam, message,player);
         	} else {
         		player.sendMessage(Color.RED + "Invalid group name!");
         	}
         	event.setCancelled(true);
         	return;
         }    */
-        if (split[0].equalsIgnoreCase("/rmotd")) {
-			this.rMotD.triggerMessagesWithOption(player, "onrmotd");
+        if (split[0].equalsIgnoreCase("/rTriggers")) {
+			this.rTriggers.triggerMessagesWithOption(player, "onrTriggers");
 			event.setCancelled(true);
 		}
 		
@@ -79,10 +79,10 @@ public class rTriggersPlayerListener extends PlayerListener {
         	if ((iShouldExist = etc.getDataSource().getGroup(split[1])) != null) {
 	        	String tag =  "<§dServer " + Colors.White + "to §" + iShouldExist.Prefix.charAt(0) + iShouldExist.Name + Colors.White + "> ";
 	        	String message = tag + etc.combineSplit(2, split, " ");
-	        	this.rMotD.sendToGroup(split[1], message);
-	        	this.rMotD.log.info("[rMotd to " + iShouldExist.Name + "] " + etc.combineSplit(2, split, " "));
+	        	this.rTriggers.sendToGroup(split[1], message);
+	        	this.rTriggers.log.info("[rTriggers to " + iShouldExist.Name + "] " + etc.combineSplit(2, split, " "));
         	} else {
-        		this.rMotD.log.info("[rMotD] Invalid group name!");
+        		this.rTriggers.log.info("[rTriggers] Invalid group name!");
         	}
         	return true;
 		}
