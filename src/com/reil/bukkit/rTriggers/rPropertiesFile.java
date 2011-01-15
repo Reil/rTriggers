@@ -9,14 +9,14 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import com.reil.bukkit.rParser.rParser;
 
 public class rPropertiesFile {
-	Hashtable<String,ArrayList<String>> Properties = new Hashtable<String,ArrayList<String>>(); 
+	HashMap<String,ArrayList<String>> Properties = new HashMap<String,ArrayList<String>>(); 
 	String fileName;
 	Logger log = Logger.getLogger("Minecraft");
 	File file;

@@ -2,7 +2,7 @@ package com.reil.bukkit.rTriggers;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.logging.Level;
@@ -68,7 +68,7 @@ public class rTriggers extends JavaPlugin {
 		
 		/* Go through all timer messages, create rTriggersTimers for each unique list */
 		if (Messages.keyExists("<<timer>>")){
-			Hashtable<String, ArrayList<String>> timerLists = new Hashtable <String, ArrayList<String>>();
+			HashMap<String, ArrayList<String>> timerLists = new HashMap <String, ArrayList<String>>();
 			scheduler = new Timer();
 			// Sort all the timer messages into lists 
 			for (String sortMe : Messages.getStrings("<<timer>>")){
@@ -207,7 +207,7 @@ public class rTriggers extends JavaPlugin {
 	 * then sends to the rest as normal */
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
-		Hashtable <Player, Player> sendToUs = new Hashtable<Player, Player>();
+		HashMap <Player, Player> sendToUs = new HashMap<Player, Player>();
 		for (String group : sendToGroups){
 			if (group.equalsIgnoreCase("<<triggerer>>")) {
 				if (triggerer != null){
@@ -254,15 +254,15 @@ public class rTriggers extends JavaPlugin {
 
 	/* Sends the message string to each group named in sendToGroups */
 	public void sendToGroups (String [] sendToGroups, String message) {
-		for (Player sendToMe :  constructPlayerList(sendToGroups, new Hashtable<Player,Player>()).values()){
+		for (Player sendToMe :  constructPlayerList(sendToGroups, new HashMap<Player,Player>()).values()){
 			sendToPlayer(message, sendToMe);
 		}
 		return;
 	}
 	
-	public Hashtable<Player, Player> constructPlayerList(String [] inTheseGroups, Hashtable<Player,Player> List){
+	public HashMap<Player, Player> constructPlayerList(String [] inTheseGroups, HashMap<Player,Player> List){
 		for (Player addMe: MCServer.getOnlinePlayers()){
-			if (!List.contains(addMe)){
+			if (!List.containsKey(addMe)){
 				/*
 				 * TODO: Reimplement this when groups come back.
 				if (addMe.hasNoGroups()) {
