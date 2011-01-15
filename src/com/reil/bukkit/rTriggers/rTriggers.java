@@ -45,14 +45,11 @@ public class rTriggers extends JavaPlugin {
 	
 	public void registerEvents(){
 		PluginManager loader = MCServer.getPluginManager();
-//		etc.getLoader().addListener(PluginLoader.Hook.LOGIN  , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
-//		etc.getLoader().addListener(PluginLoader.Hook.DISCONNECT   , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
-//		etc.getLoader().addListener(PluginLoader.Hook.COMMAND, listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
-//		etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
-//		etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
+//		TODO: etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
+//		TODO: etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
 	} 
 	public void onEnable(){
@@ -172,7 +169,6 @@ public class rTriggers extends JavaPlugin {
 							triggerCountry = playersHere.getDisplayCountry();
 							triggerLocale = playersHere.getDisplayName();
 						} catch (net.sf.javainetlocator.InetAddressLocatorException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 							triggerCountry = "";
 							triggerLocale = "";
