@@ -37,8 +37,8 @@ public class rTriggers extends JavaPlugin {
 	String versionNumber = "0.2_1"; 
 	
 	
-    public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File plugin, ClassLoader cLoader) {
-        super(pluginLoader, instance, desc, plugin, cLoader);
+    public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
+        super(pluginLoader, instance, desc, folder, plugin, cLoader);
         Messages = new rPropertiesFile("rTriggers.properties");
         registerEvents();
     }
