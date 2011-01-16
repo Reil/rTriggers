@@ -1,5 +1,5 @@
 package com.reil.bukkit.rTriggers;
-import org.bukkit.Player;
+import org.bukkit.entity.Player;
 import org.bukkit.event.entity.*;
 
 
@@ -8,7 +8,20 @@ public class rTriggersEntityListener extends EntityListener{
 	rTriggersEntityListener(rTriggers rTriggers) {
 		this.rTriggers = rTriggers;
 	}
-	public void onEntityDeath (EntityDamagedEvent event) {
+	public void onEntityDamagedByBlock(EntityDamageByBlockEvent event) {
+		if (!(event.getEntity() instanceof Player)) return;
+		Player damaged = (Player) event.getEntity();
+		if (!event.isCancelled() && event.getDamage() >= damaged.getHealth())
+			onEntityDeath(event);
+	}
+	
+	public void onEntityDamagedByEntity(EntityDamageByEntityEvent event) {
+		if (!(event.getEntity() instanceof Player)) return;
+		Player damaged = (Player) event.getEntity();
+		if (!event.isCancelled() &&  event.getDamage() >= damaged.getHealth())
+			onEntityDeath(event);
+	}
+	public void onEntityDeath (EntityDamageEvent event) {
 		String deathBy; 
 		String triggerOption;
 		if(event.isCancelled() == true || !(event.getEntity() instanceof Player)) return;

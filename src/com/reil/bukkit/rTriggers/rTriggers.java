@@ -8,7 +8,7 @@ import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.bukkit.Player;
+import org.bukkit.entity.Player;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityListener;
@@ -51,6 +51,8 @@ public class rTriggers extends JavaPlugin {
 //		TODO: etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
 //		TODO: etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Event.Priority.Monitor, this);
 	} 
 	public void onEnable(){
 		/*

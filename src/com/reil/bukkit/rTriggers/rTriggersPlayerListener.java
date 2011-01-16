@@ -1,5 +1,5 @@
 package com.reil.bukkit.rTriggers;
-import org.bukkit.Player;
+import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
