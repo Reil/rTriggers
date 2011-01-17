@@ -11,7 +11,6 @@ public class rTriggersEntityListener extends EntityListener{
 	
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player)) return;
-		rTriggers.log.info("Player pain.");
 		Player damaged = (Player) event.getEntity();
 		if (!event.isCancelled() &&  event.getDamage() >= damaged.getHealth()){
 			rTriggers.log.info("Player dead.");
