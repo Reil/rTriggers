@@ -209,6 +209,7 @@ public class rTriggers extends JavaPlugin {
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
 		HashMap <Player, Player> sendToUs = new HashMap<Player, Player>();
+		boolean flagEveryone = false;
 		for (String group : sendToGroups){
 			if (group.equalsIgnoreCase("<<triggerer>>")) {
 				if (triggerer != null){
@@ -216,9 +217,8 @@ public class rTriggers extends JavaPlugin {
 				}
 			} else if (group.equalsIgnoreCase("<<everyone>>")){
 				sendToUs.clear();
-				for (Player putMe : MCServer.getOnlinePlayers()) {
-					sendToUs.put(putMe, putMe);
-				}
+				MCServer.broadcastMessage(message);
+				flagEveryone = true;
 			} else if (group.equalsIgnoreCase("<<server>>")) {
 				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>"};
 				String [] with    = {"server", "", "", ""};
@@ -248,6 +248,7 @@ public class rTriggers extends JavaPlugin {
 				sendToGroupsFiltered.add(group);
 			}
 		}
+		if (flagEveryone) return;
 		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs).values()){
 			sendToPlayer(message, sendToMe);
 		}
