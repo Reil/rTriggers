@@ -8,18 +8,15 @@ public class rTriggersEntityListener extends EntityListener{
 	rTriggersEntityListener(rTriggers rTriggers) {
 		this.rTriggers = rTriggers;
 	}
-	public void onEntityDamagedByBlock(EntityDamageByBlockEvent event) {
-		if (!(event.getEntity() instanceof Player)) return;
-		Player damaged = (Player) event.getEntity();
-		if (!event.isCancelled() && event.getDamage() >= damaged.getHealth())
-			onEntityDeath(event);
-	}
 	
-	public void onEntityDamagedByEntity(EntityDamageByEntityEvent event) {
+	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player)) return;
+		rTriggers.log.info("Player pain.");
 		Player damaged = (Player) event.getEntity();
-		if (!event.isCancelled() &&  event.getDamage() >= damaged.getHealth())
+		if (!event.isCancelled() &&  event.getDamage() >= damaged.getHealth()){
+			rTriggers.log.info("Player dead.");
 			onEntityDeath(event);
+		}
 	}
 	public void onEntityDeath (EntityDamageEvent event) {
 		String deathBy; 

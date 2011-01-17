@@ -51,8 +51,7 @@ public class rTriggers extends JavaPlugin {
 //		TODO: etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
 //		TODO: etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
 	} 
 	public void onEnable(){
 		/*
