@@ -9,6 +9,13 @@ public class rTriggersEntityListener extends EntityListener{
 		this.rTriggers = rTriggers;
 	}
 	
+	public void onEntityDamageByEntity (EntityDamageByEntityEvent event){
+		onEntityDamage(event);
+	}
+	
+	public void onEntityDamageByBlock (EntityDamageByBlockEvent event){
+		onEntityDamage(event);
+	}
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player)) return;
 		Player damaged = (Player) event.getEntity();
