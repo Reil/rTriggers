@@ -34,12 +34,13 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.3_1"; 
+	String versionNumber = "0.3_2"; 
 	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
-        Messages = new rPropertiesFile("rTriggers.properties");
+        folder.mkdir();
+        Messages = new rPropertiesFile(folder.getPath() + "/rTriggers.properties");
         registerEvents();
     }
 	
