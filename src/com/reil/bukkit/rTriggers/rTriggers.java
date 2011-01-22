@@ -220,7 +220,8 @@ public class rTriggers extends JavaPlugin {
 				}
 			} else if (group.equalsIgnoreCase("<<everyone>>")){
 				sendToUs.clear();
-				MCServer.broadcastMessage(message);
+				for (Player addMe : MCServer.getOnlinePlayers())
+					sendToUs.put(addMe, addMe);
 				flagEveryone = true;
 			} else if (group.equalsIgnoreCase("<<server>>")) {
 				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>"};
@@ -251,7 +252,6 @@ public class rTriggers extends JavaPlugin {
 				sendToGroupsFiltered.add(group);
 			}
 		}
-		if (flagEveryone) return;
 		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs).values()){
 			sendToPlayer(message, sendToMe);
 		}
