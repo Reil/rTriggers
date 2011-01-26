@@ -1,5 +1,6 @@
 package com.reil.bukkit.rTriggers;
 import java.io.File;
+
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,17 +15,20 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import org.bukkit.croemmich.serverevents.*;
 
 import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
 	public rPropertiesFile Messages;
-	
+	Plugin ServerEvents;
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
 	Logger log = Logger.getLogger("Minecraft");
@@ -34,7 +38,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.3_3"; 
+	String versionNumber = "0.4"; 
 	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
@@ -93,7 +97,6 @@ public class rTriggers extends JavaPlugin {
 				scheduler.schedule(scheduleMe, scheduleMe.delay);
 			}
 		}
-
 		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
 		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
 		log.info("[rTriggers] Loaded: Version " + versionNumber);
@@ -229,13 +232,23 @@ public class rTriggers extends JavaPlugin {
 				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
 				for(String send : serverMessage.split("\n"))
 					log.info(send);
-			} /* TODO: Reipliment when TwitterEvents comes to Bukkit
+			}
 			else if (group.equalsIgnoreCase("<<twitter>>")){
 				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>"};
 				String [] with    = {"Twitter", "", "", ""};
 				String twitterMessage = rParser.parseMessage(message, replace, with);
-				etc.getLoader().callCustomHook("tweet", new Object[] {twitterMessage});
-			}*/
+				Plugin ServerEvents = MCServer.getPluginManager().getPlugin("ServerEvents");
+				if (ServerEvents != null){
+					try {
+						org.bukkit.croemmich.serverevents.ServerEvents.displayMessage(twitterMessage);
+					} catch (ClassCastException ex){
+						log.info("[rTriggers] ServerEvents not found!");
+					}
+				} else {
+					log.info("[rTriggers] ServerEvents not found!");
+				}
+				// org.bukkit.croemmich.serverevents.ServerEvents.displayMessage(twitterMessage);
+			}
 			/* TODO: Reimpliment when we can send commands as the player again.
 			else if (group.equalsIgnoreCase("<<command>>")) {
 				if (triggerer != null) {

@@ -12,7 +12,9 @@ public class rTriggersEntityListener extends EntityListener{
 	public void onEntityDamageByEntity (EntityDamageByEntityEvent event){
 		onEntityDamage(event);
 	}
-	
+	public void onEntityDamageByProjectile (EntityDamageByProjectileEvent event) {
+		onEntityDamage(event);
+	}
 	public void onEntityDamageByBlock (EntityDamageByBlockEvent event){
 		onEntityDamage(event);
 	}
@@ -36,6 +38,10 @@ public class rTriggersEntityListener extends EntityListener{
 		case ENTITY_ATTACK:
 			triggerOption = "entity_attack";
 			deathBy = "being hit";
+			break;
+		case SUFFOCATION:
+			triggerOption = "suffocation";
+			deathBy = "suffocation";
 			break;
 		case FALL:
 			triggerOption = "fall";
