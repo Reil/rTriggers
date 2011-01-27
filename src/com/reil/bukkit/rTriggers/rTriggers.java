@@ -38,7 +38,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.4"; 
+	String versionNumber = "0.4.5"; 
 	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
@@ -59,6 +59,7 @@ public class rTriggers extends JavaPlugin {
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Event.Priority.Monitor, this);
 	} 
 	public void onEnable(){
 		/*

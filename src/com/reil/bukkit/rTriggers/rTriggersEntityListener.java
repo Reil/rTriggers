@@ -1,13 +1,17 @@
 package com.reil.bukkit.rTriggers;
+import java.util.HashMap;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.*;
 
 
 public class rTriggersEntityListener extends EntityListener{
 	private final rTriggers rTriggers;
+	HashMap <Player, EntityDamageEvent.DamageCause> deathCause = new HashMap <Player, EntityDamageEvent.DamageCause>();
 	rTriggersEntityListener(rTriggers rTriggers) {
 		this.rTriggers = rTriggers;
 	}
+	
 	
 	public void onEntityDamageByEntity (EntityDamageByEntityEvent event){
 		onEntityDamage(event);
@@ -19,18 +23,17 @@ public class rTriggersEntityListener extends EntityListener{
 		onEntityDamage(event);
 	}
 	public void onEntityDamage(EntityDamageEvent event) {
-		if (!(event.getEntity() instanceof Player)) return;
-		Player damaged = (Player) event.getEntity();
-		if (!event.isCancelled() &&  event.getDamage() >= damaged.getHealth()){
-			onEntityDeath(event);
-		}
+		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
+		deathCause.put((Player) event.getEntity(), event.getCause());
 	}
-	public void onEntityDeath (EntityDamageEvent event) {
+	public void onEntityDeath (EntityDeathEvent event) {
 		String deathBy; 
 		String triggerOption;
-		if(event.isCancelled() == true || !(event.getEntity() instanceof Player)) return;
+		if(!(event.getEntity() instanceof Player)) return;
 		Player deadGuy = (Player) event.getEntity();
-		switch (event.getCause()) {
+		EntityDamageEvent.DamageCause causeOfDeath = deathCause.get(deadGuy);
+		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
+		switch (causeOfDeath) {
 		case CONTACT:
 			triggerOption = "contact";
 			deathBy = "touching something";
