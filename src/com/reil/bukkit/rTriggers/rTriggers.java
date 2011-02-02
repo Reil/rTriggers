@@ -15,6 +15,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.server.ServerListener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
@@ -31,6 +32,7 @@ public class rTriggers extends JavaPlugin {
 	Plugin ServerEvents;
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
+	ServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer = getServer();
 	public iData data;
@@ -53,7 +55,7 @@ public class rTriggers extends JavaPlugin {
 		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
-//		TODO: etc.getLoader().addListener(PluginLoader.Hook.SERVERCOMMAND, listener, this, PluginListener.Priority.MEDIUM);
+		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);
 //		TODO: etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
@@ -108,12 +110,6 @@ public class rTriggers extends JavaPlugin {
 		log.info("[rTriggers] Disabled!");
 	} 
 	
-	public void sendToGroup(String sendToGroup, String message) {
-		String [] arrayOfOne = new String[1];
-		arrayOfOne[0] = sendToGroup;
-		sendToGroups(arrayOfOne, message);
-		return;
-	}
 	
 	/* Looks through all of the messages,
 	 * Sends the messages triggered by groups which 'triggerMessage' is a member of,
@@ -203,7 +199,7 @@ public class rTriggers extends JavaPlugin {
 		/* Default: Send to player unless groups are specified.
 		 * If so, send to those instead. */
 		if (Groups.isEmpty()) {
-			sendToPlayer(message, triggerMessage);
+			sendToPlayer(message, triggerMessage, false);
 		}
 		else {
 			String [] sendToGroups = Groups.split(",");
@@ -217,11 +213,16 @@ public class rTriggers extends JavaPlugin {
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
 		HashMap <Player, Player> sendToUs = new HashMap<Player, Player>();
 		boolean flagEveryone = false;
+		boolean flagCommand = false;
 		for (String group : sendToGroups){
 			if (group.equalsIgnoreCase("<<triggerer>>")) {
 				if (triggerer != null){
 					sendToUs.put(triggerer, triggerer);
 				}
+			} else if (group.equalsIgnoreCase("<<command-triggerer>>")){
+				triggerer.performCommand(message);
+			} else if (group.equalsIgnoreCase("<<command-recipient>>")){
+				flagCommand = true;
 			} else if (group.equalsIgnoreCase("<<everyone>>")){
 				sendToUs.clear();
 				for (Player addMe : MCServer.getOnlinePlayers())
@@ -248,15 +249,7 @@ public class rTriggers extends JavaPlugin {
 				} else {
 					log.info("[rTriggers] ServerEvents not found!");
 				}
-				// org.bukkit.croemmich.serverevents.ServerEvents.displayMessage(twitterMessage);
-			}
-			/* TODO: Reimpliment when we can send commands as the player again.
-			else if (group.equalsIgnoreCase("<<command>>")) {
-				if (triggerer != null) {
-					//String command = message.substring(message.indexOf('/'));
-					// PlayerChatEvent useCommand = new PlayerChatEvent(Event.Type.PLAYER_COMMAND,triggerer, command);
-				}
-			}*/ else if (group.substring(0,9).equalsIgnoreCase("<<player|")){
+			} else if (group.substring(0,9).equalsIgnoreCase("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
 				log.info(playerName);
 				Player putMe = MCServer.getPlayer(playerName);
@@ -267,16 +260,8 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs).values()){
-			sendToPlayer(message, sendToMe);
+			sendToPlayer(message, sendToMe, flagCommand);
 		}
-	}
-
-	/* Sends the message string to each group named in sendToGroups */
-	public void sendToGroups (String [] sendToGroups, String message) {
-		for (Player sendToMe :  constructPlayerList(sendToGroups, new HashMap<Player,Player>()).values()){
-			sendToPlayer(message, sendToMe);
-		}
-		return;
 	}
 	
 	public HashMap<Player, Player> constructPlayerList(String [] inTheseGroups, HashMap<Player,Player> List){
@@ -309,7 +294,7 @@ public class rTriggers extends JavaPlugin {
 		return List;
 	}
 	
-	public void sendToPlayer(String message, Player recipient) {
+	public void sendToPlayer(String message, Player recipient, boolean flagCommand) {
 		int balance = 0;
 		if (data != null){
 			balance = data.getBalance(recipient.getName());
@@ -333,7 +318,11 @@ public class rTriggers extends JavaPlugin {
 		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Integer.toString(balance)};
 		message = rParser.parseMessage(message, replace, with);
 		/* Tag replacement end. */
-		for(String send : message.split("\n"))
-			recipient.sendMessage(send);
+		if (flagCommand == true){
+			for(String send : message.split("\n"))
+				recipient.sendMessage(send);
+		} else {
+			recipient.performCommand(message);
+		}
 	}
 }
