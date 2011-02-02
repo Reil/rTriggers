@@ -220,7 +220,7 @@ public class rTriggers extends JavaPlugin {
 					sendToUs.put(triggerer, triggerer);
 				}
 			} else if (group.equalsIgnoreCase("<<command-triggerer>>")){
-				triggerer.performCommand(message);
+				sendToPlayer(message, triggerer, true);
 			} else if (group.equalsIgnoreCase("<<command-recipient>>")){
 				flagCommand = true;
 			} else if (group.equalsIgnoreCase("<<everyone>>")){
