@@ -318,7 +318,7 @@ public class rTriggers extends JavaPlugin {
 		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Integer.toString(balance)};
 		message = rParser.parseMessage(message, replace, with);
 		/* Tag replacement end. */
-		if (flagCommand == true){
+		if (flagCommand == false){
 			for(String send : message.split("\n"))
 				recipient.sendMessage(send);
 		} else {
