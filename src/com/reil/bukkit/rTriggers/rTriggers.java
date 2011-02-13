@@ -24,6 +24,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.croemmich.serverevents.*;
 
+import com.nijikokun.bukkit.iConomy.iConomy;
 import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
@@ -35,13 +36,25 @@ public class rTriggers extends JavaPlugin {
 	ServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer = getServer();
-	public iData data;
 	Timer scheduler;
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6"; 
+	String versionNumber = "0.6_1"; 
 	
+	private boolean useiConomy = false;
+
+    public boolean checkiConomy() {
+        Plugin test = this.getServer().getPluginManager().getPlugin("iConomy");
+
+        if (test != null) {
+            this.useiConomy = true;
+        } else {
+            this.useiConomy = false;
+        }
+
+        return useiConomy;
+    }
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
@@ -71,9 +84,7 @@ public class rTriggers extends JavaPlugin {
 		 * TODO: When we get groups again, finally.
 		if (etc.getDataSource().getDefaultGroup() != null)
 			defaultGroup = etc.getDataSource().getDefaultGroup().Name;*/
-		if (iData.iExist()){
-			data = new iData();
-		}
+		checkiConomy();
 		
 		try {
 			Messages.load();
@@ -167,8 +178,10 @@ public class rTriggers extends JavaPlugin {
 						/**************************************************
 						 *  Tag replacement: First round (triggerer) go! */
 						int balance = 0;
-						if (data != null){
-							balance = data.getBalance(triggerMessage.getName());
+						if (useiConomy){
+							if (iConomy.db.has_balance(triggerMessage.getName())) {
+								balance = iConomy.db.get_balance(triggerMessage.getName());
+							}
 						}
 						InetSocketAddress triggerIP = triggerMessage.getAddress();
 						String triggerCountry;
@@ -310,8 +323,10 @@ public class rTriggers extends JavaPlugin {
 	
 	public void sendToPlayer(String message, Player recipient, boolean flagCommand) {
 		int balance = 0;
-		if (data != null){
-			balance = data.getBalance(recipient.getName());
+		if (useiConomy){
+			if (iConomy.db.has_balance(recipient.getName())) {
+				balance = iConomy.db.get_balance(recipient.getName());
+			}
 		}
 		/****************************************************
 		 * Tag replacement: Second round (recipient)!  Go!  */
