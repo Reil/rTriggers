@@ -40,7 +40,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.5"; 
+	String versionNumber = "0.6"; 
 	
 	
     public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
@@ -52,11 +52,14 @@ public class rTriggers extends JavaPlugin {
 	
 	public void registerEvents(){
 		PluginManager loader = MCServer.getPluginManager();
+		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
+		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
 		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);
-//		TODO: etc.getLoader().addListener(PluginLoader.Hook.BAN          , listener, this, PluginListener.Priority.MEDIUM);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Event.Priority.Monitor, this);
@@ -65,6 +68,7 @@ public class rTriggers extends JavaPlugin {
 	} 
 	public void onEnable(){
 		/*
+		 * TODO: When we get groups again, finally.
 		if (etc.getDataSource().getDefaultGroup() != null)
 			defaultGroup = etc.getDataSource().getDefaultGroup().Name;*/
 		if (iData.iExist()){
@@ -100,8 +104,6 @@ public class rTriggers extends JavaPlugin {
 				scheduler.schedule(scheduleMe, scheduleMe.delay);
 			}
 		}
-		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
-		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
 		log.info("[rTriggers] Loaded: Version " + versionNumber);
 	}
 	public void onDisable(){
@@ -138,9 +140,11 @@ public class rTriggers extends JavaPlugin {
 		if (players.length == 1)
 			playerList = players[0].getName();
 		else {
+			StringBuilder list = new StringBuilder();
 			for (Player getName : players){
-				playerList = getName.getName() + ", " + playerList;
+				list.insert(0, getName.getName() + ", ");
 			}
+			playerList = list.toString();
 		}
 		
 		/* Check for messages triggered by each group the player is a member of. */
@@ -160,7 +164,8 @@ public class rTriggers extends JavaPlugin {
 					if (hookValid) {
 						String message = rParser.combineSplit(2, split, ":");
 						
-						/* Tag replacement: First round (triggerer) go! */
+						/**************************************************
+						 *  Tag replacement: First round (triggerer) go! */
 						int balance = 0;
 						if (data != null){
 							balance = data.getBalance(triggerMessage.getName());
@@ -180,12 +185,13 @@ public class rTriggers extends JavaPlugin {
 							triggerCountry = "";
 							triggerLocale = "";
 						}
-						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", /*"<<triggerer-color>>"   ,*/ "<<triggerer-balance>>"  , "<<player-list>>"};
-						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList};					
+						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", /*"<<triggerer-color>>"   ,*/ "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>"};
+						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList       , "§"};					
 						message = rParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
 							message = rParser.parseMessage(message, eventToReplace, eventReplaceWith);
-						/* Tag replacement end! */
+						/**************************
+						 *  Tag replacement end! */
 						
 						sendMessage(message, triggerMessage, split[0]);
 					}
@@ -214,6 +220,10 @@ public class rTriggers extends JavaPlugin {
 		HashMap <Player, Player> sendToUs = new HashMap<Player, Player>();
 		boolean flagEveryone = false;
 		boolean flagCommand = false;
+		/*************************************
+		 * Begin:
+		 * 1) Constructing list of groups to send to
+		 * 2) Processing 'special' groups (ones in double-chevrons) */
 		for (String group : sendToGroups){
 			if (group.equalsIgnoreCase("<<triggerer>>")) {
 				if (triggerer != null){
@@ -229,8 +239,8 @@ public class rTriggers extends JavaPlugin {
 					sendToUs.put(addMe, addMe);
 				flagEveryone = true;
 			} else if (group.equalsIgnoreCase("<<server>>")) {
-				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>"};
-				String [] with    = {"server", "", "", ""};
+				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
+				String [] with    = {"server", "", "", "", ""};
 				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
 				for(String send : serverMessage.split("\n"))
 					log.info(send);
@@ -259,6 +269,10 @@ public class rTriggers extends JavaPlugin {
 				sendToGroupsFiltered.add(group);
 			}
 		}
+		/****************************************************
+		 * List of non-special case groups is now constructed.
+		 * Find players who belong to the non-special case groups,
+		 * and send the message to them.  */
 		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs).values()){
 			sendToPlayer(message, sendToMe, flagCommand);
 		}
@@ -299,6 +313,8 @@ public class rTriggers extends JavaPlugin {
 		if (data != null){
 			balance = data.getBalance(recipient.getName());
 		}
+		/****************************************************
+		 * Tag replacement: Second round (recipient)!  Go!  */
 		InetSocketAddress recipientIP = recipient.getAddress(); 
 		String recipientCountry;
 		String recipientLocale;
@@ -317,7 +333,8 @@ public class rTriggers extends JavaPlugin {
 		String [] replace = {"<<recipient>>"    , "<<recipient-ip>>"    , "recipient-locale", "<<recipient-country>>", "<<recipient-color>>", "<<recipient-balance>>"};
 		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Integer.toString(balance)};
 		message = rParser.parseMessage(message, replace, with);
-		/* Tag replacement end. */
+		/*************************
+		 * Tag replacement end. */
 		if (flagCommand == false){
 			for(String send : message.split("\n"))
 				recipient.sendMessage(send);

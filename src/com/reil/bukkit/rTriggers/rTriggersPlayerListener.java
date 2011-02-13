@@ -2,6 +2,7 @@ package com.reil.bukkit.rTriggers;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
 
 
@@ -30,18 +31,17 @@ public class rTriggersPlayerListener extends PlayerListener {
 		return;
 	}
 	/*
-	public boolean onHealthChange(Player triggerMessage, int oldValue, int newValue){
-		if (newValue <= 0) {
-			this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondeath");
-		}
-		return false;
-	}
-	
 	public void onBan(Player mod, Player triggerMessage, java.lang.String reason) {
 		String [] replaceThese = {"<<ban-reason>>", "<<ban-setter>>", "<<ban-recipient>>"     };
 		String [] withThese =    {reason          , mod.getName()   , triggerMessage.getName()};
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onban", replaceThese, withThese);
 	}*/
+	public void onPlayerKick(PlayerKickEvent event){
+		Player triggerMessage = event.getPlayer();
+		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
+		String [] withThese =    {event.getReason() , triggerMessage.getName()};
+		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onkick", replaceThese, withThese);
+	}
 	
 	public void onPlayerCommand(PlayerChatEvent event){
 		Player player = event.getPlayer();
