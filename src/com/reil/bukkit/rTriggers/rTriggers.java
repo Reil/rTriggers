@@ -195,11 +195,11 @@ public class rTriggers extends JavaPlugin {
 							triggerCountry = "";
 							triggerLocale = "";
 						} catch (NoClassDefFoundError e){
-							triggerCountry = "";
+							triggerCountry = ""; 
 							triggerLocale = "";
 						}
-						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", /*"<<triggerer-color>>"   ,*/ "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>"};
-						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry,/*triggerMessage.getColor(),*/ Integer.toString(balance), playerList       , "§"};					
+						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/};
+						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance), playerList       , "§"/*,triggerMessage.getColor(),*/};					
 						message = rParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
 							message = rParser.parseMessage(message, eventToReplace, eventReplaceWith);
