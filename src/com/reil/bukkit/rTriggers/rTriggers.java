@@ -40,7 +40,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6_1"; 
+	String versionNumber = "0.6_3";
 	
 	private boolean useiConomy = false;
 
@@ -69,7 +69,6 @@ public class rTriggers extends JavaPlugin {
 		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
 		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);

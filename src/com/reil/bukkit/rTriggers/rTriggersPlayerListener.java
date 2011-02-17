@@ -47,7 +47,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		Player player = event.getPlayer();
 		String [] split = event.getMessage().split(" ");
 		
-		this.rTriggers.triggerMessagesWithOption(player, "oncommand:" + split[0]);
+		//this.rTriggers.triggerMessagesWithOption(player, "oncommand:" + split[0]);
 		this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0]);
 		/*
         if (split[0].equalsIgnoreCase("/grouptell")){
