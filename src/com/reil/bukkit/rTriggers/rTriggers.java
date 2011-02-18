@@ -40,7 +40,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6_3";
+	String versionNumber = "0.6_4";
 	
 	private boolean useiConomy = false;
 
