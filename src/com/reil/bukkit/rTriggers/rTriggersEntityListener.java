@@ -13,15 +13,6 @@ public class rTriggersEntityListener extends EntityListener{
 	}
 	
 	
-	public void onEntityDamageByEntity (EntityDamageByEntityEvent event){
-		onEntityDamage(event);
-	}
-	public void onEntityDamageByProjectile (EntityDamageByProjectileEvent event) {
-		onEntityDamage(event);
-	}
-	public void onEntityDamageByBlock (EntityDamageByBlockEvent event){
-		onEntityDamage(event);
-	}
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
 		deathCause.put((Player) event.getEntity(), event.getCause());

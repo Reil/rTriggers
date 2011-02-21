@@ -35,7 +35,7 @@ public class rTriggers extends JavaPlugin {
 	EntityListener entityListener = new rTriggersEntityListener(this);
 	ServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
-	Server MCServer = getServer();
+	Server MCServer;
 	Timer scheduler;
 	
 	
@@ -55,13 +55,7 @@ public class rTriggers extends JavaPlugin {
 
         return useiConomy;
     }
-	
-    public rTriggers(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc,File folder, File plugin, ClassLoader cLoader) {
-        super(pluginLoader, instance, desc, folder, plugin, cLoader);
-        folder.mkdir();
-        Messages = new rPropertiesFile(folder.getPath() + "/rTriggers.properties");
-    }
-	
+	 
 	public void registerEvents(){
 		PluginManager loader = MCServer.getPluginManager();
 		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
@@ -73,15 +67,16 @@ public class rTriggers extends JavaPlugin {
 		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_BLOCK, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_ENTITY, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGEDBY_PROJECTILE, entityListener, Event.Priority.Monitor, this);
 	} 
 	public void onEnable(){
+		MCServer = getServer();
+		getDataFolder().mkdir();
+        Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
 		/*
 		 * TODO: When we get groups again, finally.
 		if (etc.getDataSource().getDefaultGroup() != null)
 			defaultGroup = etc.getDataSource().getDefaultGroup().Name;*/
+		
 		checkiConomy();
 		
 		try {
@@ -197,7 +192,7 @@ public class rTriggers extends JavaPlugin {
 							triggerCountry = ""; 
 							triggerLocale = "";
 						}
-						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
+						String [] replace = {"@"	 , "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
 						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance), playerList       , "§"/*,triggerMessage.getColor(),*/,""};					
 						message = rParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
