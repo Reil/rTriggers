@@ -40,7 +40,7 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6_4";
+	String versionNumber = "0.6_5";
 	
 	private boolean useiConomy = false;
 
@@ -60,7 +60,6 @@ public class rTriggers extends JavaPlugin {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
         folder.mkdir();
         Messages = new rPropertiesFile(folder.getPath() + "/rTriggers.properties");
-        registerEvents();
     }
 	
 	public void registerEvents(){
@@ -115,6 +114,7 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		log.info("[rTriggers] Loaded: Version " + versionNumber);
+		registerEvents();
 	}
 	public void onDisable(){
 		Messages.save();
@@ -197,8 +197,8 @@ public class rTriggers extends JavaPlugin {
 							triggerCountry = ""; 
 							triggerLocale = "";
 						}
-						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/};
-						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance), playerList       , "§"/*,triggerMessage.getColor(),*/};					
+						String [] replace = {"@"	, "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
+						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance), playerList       , "§"/*,triggerMessage.getColor(),*/,""};					
 						message = rParser.parseMessage(message, replace, with);
 						if (eventToReplace.length > 0)
 							message = rParser.parseMessage(message, eventToReplace, eventReplaceWith);
