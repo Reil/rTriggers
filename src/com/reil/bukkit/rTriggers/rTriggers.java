@@ -1,5 +1,6 @@
 package com.reil.bukkit.rTriggers;
 import java.io.File;
+import java.io.IOException;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -37,10 +38,11 @@ public class rTriggers extends JavaPlugin {
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer;
 	Timer scheduler;
+	boolean registered = false;
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6_5";
+	String versionNumber = "0.6_7";
 	
 	private boolean useiConomy = false;
 
@@ -57,16 +59,18 @@ public class rTriggers extends JavaPlugin {
     }
 	 
 	public void registerEvents(){
+		if (registered) return;
 		PluginManager loader = MCServer.getPluginManager();
 		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
 		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
 		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
+		registered = true;
 	} 
 	public void onEnable(){
 		MCServer = getServer();
@@ -114,6 +118,7 @@ public class rTriggers extends JavaPlugin {
 	public void onDisable(){
 		Messages.save();
 		if (scheduler != null) scheduler.cancel();
+		PluginManager loader = MCServer.getPluginManager();
 		log.info("[rTriggers] Disabled!");
 	} 
 	
@@ -126,6 +131,9 @@ public class rTriggers extends JavaPlugin {
 		String[] eventReplaceWith = new String[0];
 		triggerMessagesWithOption(triggerMessage, option, eventToReplace, eventReplaceWith);
 	}
+	public void triggerMessagesWithOption(String option, String[] eventToReplace, String []eventReplaceWith){
+		triggerMessagesWithOption(null, option, eventToReplace, eventReplaceWith);
+	}
 	
 	public void triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
@@ -136,7 +144,11 @@ public class rTriggers extends JavaPlugin {
 		} else {
 			groupArray.addAll(Arrays.asList(triggerMessage.getGroups()));
 		}*/
-		groupArray.add("<<player|" + triggerMessage.getName() + ">>");
+		if (triggerMessage != null){
+			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
+		} else {
+			groupArray.add("<<customtrigger>>");
+		}
 		groupArray.add("<<everyone>>");
 		
 		/* Obtain list of online players */
@@ -168,33 +180,10 @@ public class rTriggers extends JavaPlugin {
 					
 					if (hookValid) {
 						String message = rParser.combineSplit(2, split, ":");
-						
-						/**************************************************
-						 *  Tag replacement: First round (triggerer) go! */
-						int balance = 0;
-						if (useiConomy){
-							if (iConomy.db.has_balance(triggerMessage.getName())) {
-								balance = iConomy.db.get_balance(triggerMessage.getName());
-							}
-						}
-						InetSocketAddress triggerIP = triggerMessage.getAddress();
-						String triggerCountry;
-						String triggerLocale;
-						try {
-							Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(triggerIP.getAddress());
-							triggerCountry = playersHere.getDisplayCountry();
-							triggerLocale = playersHere.getDisplayName();
-						} catch (net.sf.javainetlocator.InetAddressLocatorException e) {
-							e.printStackTrace();
-							triggerCountry = "";
-							triggerLocale = "";
-						} catch (NoClassDefFoundError e){
-							triggerCountry = ""; 
-							triggerLocale = "";
-						}
-						String [] replace = {"@"	 , "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>"  , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
-						String [] with    = {"\n"	, triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance), playerList       , "§"/*,triggerMessage.getColor(),*/,""};					
+						String [] replace = {"@"	 , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
+						String [] with    = {"\n"	 , playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
 						message = rParser.parseMessage(message, replace, with);
+						message = replaceTagsTriggerer(triggerMessage, message);
 						if (eventToReplace.length > 0)
 							message = rParser.parseMessage(message, eventToReplace, eventReplaceWith);
 						/**************************
@@ -207,6 +196,36 @@ public class rTriggers extends JavaPlugin {
 		}
 	}
 	
+	public String replaceTagsTriggerer(Player triggerMessage, String message){
+		/**************************************************
+		 *  Tag replacement: First round (triggerer) go! */
+		if (triggerMessage == null)
+			return message;
+		int balance = 0;
+		if (useiConomy){
+			if (iConomy.db.has_balance(triggerMessage.getName())) {
+				balance = iConomy.db.get_balance(triggerMessage.getName());
+			}
+		}
+		InetSocketAddress triggerIP = triggerMessage.getAddress();
+		String triggerCountry;
+		String triggerLocale;
+		try {
+			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(triggerIP.getAddress());
+			triggerCountry = playersHere.getDisplayCountry();
+			triggerLocale = playersHere.getDisplayName();
+		} catch (net.sf.javainetlocator.InetAddressLocatorException e) {
+			e.printStackTrace();
+			triggerCountry = "";
+			triggerLocale = "";
+		} catch (NoClassDefFoundError e){
+			triggerCountry = ""; 
+			triggerLocale = "";
+		}
+		String [] replace = { "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+		String [] with    = { triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance)};
+		return rParser.parseMessage(message, replace, with);
+	}
 	
 	public void sendMessage(String message, Player triggerMessage, String Groups){
 		/* Default: Send to player unless groups are specified.
@@ -272,6 +291,14 @@ public class rTriggers extends JavaPlugin {
 				Player putMe = MCServer.getPlayer(playerName);
 				if (putMe != null)
 					sendToUs.put(putMe, putMe);
+			} else if (group.equalsIgnoreCase("<<execute>>")){
+				Runtime rt = Runtime.getRuntime();
+				log.info("[rTriggers] Executing:" + message);
+				try {
+					Process pr = rt.exec(message);
+				} catch (IOException e) { 
+					e.printStackTrace();
+				}
 			} else {
 				sendToGroupsFiltered.add(group);
 			}

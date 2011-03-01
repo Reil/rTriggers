@@ -43,7 +43,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
-	public void onPlayerCommand(PlayerChatEvent event){
+	public void onPlayerCommandPreprocess(PlayerChatEvent event){
 		Player player = event.getPlayer();
 		String [] split = event.getMessage().split(" ");
 		
