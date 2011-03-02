@@ -13,9 +13,11 @@ import java.util.logging.Logger;
 import org.bukkit.entity.Player;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
+import org.bukkit.event.Event.Priority;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.server.PluginEvent;
 import org.bukkit.event.server.ServerListener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -25,7 +27,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.croemmich.serverevents.*;
 
-import com.nijikokun.bukkit.iConomy.iConomy;
+import com.nijiko.coelho.iConomy.iConomy;
 import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
@@ -45,33 +47,24 @@ public class rTriggers extends JavaPlugin {
 	String versionNumber = "0.6_7";
 	
 	private boolean useiConomy = false;
-
-    public boolean checkiConomy() {
-        Plugin test = this.getServer().getPluginManager().getPlugin("iConomy");
-
-        if (test != null) {
-            this.useiConomy = true;
-        } else {
-            this.useiConomy = false;
-        }
-
-        return useiConomy;
-    }
+	private iConomy iConomyPlugin;
+    private ServerListener Listener = new Listener();
 	 
 	public void registerEvents(){
 		if (registered) return;
 		PluginManager loader = MCServer.getPluginManager();
 		/* TODO (Efficiency): Go through each message, see if any messages actually need these listeners. */
 		// Regex: ^([A-Za-z0-9,]+):([A-Za-z0-9,]*:([A-Za-z0-9,]*disconnect([A-Za-z0-9,]*)
-		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Event.Priority.Monitor, this);
-		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Event.Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLUGIN_ENABLE, Listener, Priority.Monitor, this);
 		registered = true;
-	} 
+	}  
 	public void onEnable(){
 		MCServer = getServer();
 		getDataFolder().mkdir();
@@ -80,8 +73,6 @@ public class rTriggers extends JavaPlugin {
 		 * TODO: When we get groups again, finally.
 		if (etc.getDataSource().getDefaultGroup() != null)
 			defaultGroup = etc.getDataSource().getDefaultGroup().Name;*/
-		
-		checkiConomy();
 		
 		try {
 			Messages.load();
@@ -201,10 +192,10 @@ public class rTriggers extends JavaPlugin {
 		 *  Tag replacement: First round (triggerer) go! */
 		if (triggerMessage == null)
 			return message;
-		int balance = 0;
+		double balance = 0;
 		if (useiConomy){
-			if (iConomy.db.has_balance(triggerMessage.getName())) {
-				balance = iConomy.db.get_balance(triggerMessage.getName());
+			if (iConomy.getBank().hasAccount(triggerMessage.getName())) {
+				balance = iConomy.getBank().getAccount(triggerMessage.getName()).getBalance();
 			}
 		}
 		InetSocketAddress triggerIP = triggerMessage.getAddress();
@@ -223,7 +214,7 @@ public class rTriggers extends JavaPlugin {
 			triggerLocale = "";
 		}
 		String [] replace = { "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
-		String [] with    = { triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Integer.toString(balance)};
+		String [] with    = { triggerMessage.getName() , triggerIP.toString()  ,         triggerLocale,           triggerCountry, Double.toString(balance)};
 		return rParser.parseMessage(message, replace, with);
 	}
 	
@@ -343,10 +334,10 @@ public class rTriggers extends JavaPlugin {
 	}
 	
 	public void sendToPlayer(String message, Player recipient, boolean flagCommand) {
-		int balance = 0;
+		double balance = 0;
 		if (useiConomy){
-			if (iConomy.db.has_balance(recipient.getName())) {
-				balance = iConomy.db.get_balance(recipient.getName());
+			if (iConomy.getBank().hasAccount(recipient.getName())) {
+				balance = iConomy.getBank().getAccount(recipient.getName()).getBalance();
 			}
 		}
 		/****************************************************
@@ -367,7 +358,7 @@ public class rTriggers extends JavaPlugin {
 			recipientLocale = "";
 		}
 		String [] replace = {"<<recipient>>"    , "<<recipient-ip>>"    , "recipient-locale", "<<recipient-country>>", "<<recipient-color>>", "<<recipient-balance>>"};
-		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Integer.toString(balance)};
+		String [] with    = {recipient.getName(), recipientIP.toString(), recipientLocale   , recipientCountry       , ""/*recipient.getColor()*/ , Double.toString(balance)};
 		message = rParser.parseMessage(message, replace, with);
 		/*************************
 		 * Tag replacement end. */
@@ -378,4 +369,18 @@ public class rTriggers extends JavaPlugin {
 			recipient.performCommand(message);
 		}
 	}
+	
+	
+	
+	private class Listener extends ServerListener {
+
+        public Listener() { }
+
+        public void onPluginEnabled(PluginEvent event) {
+            if(event.getPlugin().getDescription().getName().equals("iConomy")) {
+                log.info("[rTriggers] Attached to iConomy.");
+                useiConomy = true;
+            }
+        }
+    }
 }
