@@ -1,4 +1,6 @@
 package com.reil.bukkit.rTriggers;
+import java.util.ArrayList;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
@@ -45,26 +47,21 @@ public class rTriggersPlayerListener extends PlayerListener {
 	
 	public void onPlayerCommandPreprocess(PlayerChatEvent event){
 		Player player = event.getPlayer();
+		ArrayList<String> replaceThese = new ArrayList<String>();
+		ArrayList<String> withThese = new ArrayList<String>();
 		String [] split = event.getMessage().split(" ");
+		for(int i = 1; i < split.length; i++){
+			replaceThese.add("<<param" + Integer.toString(i) + ">>");
+			withThese.add(split[i]);
+		}
+		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
+		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
+
+		this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
 		
-		//this.rTriggers.triggerMessagesWithOption(player, "oncommand:" + split[0]);
-		this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0]);
-		/*
-        if (split[0].equalsIgnoreCase("/grouptell")){
-        	Group iShouldExist;
-        	if ((iShouldExist = etc.getDataSource().getGroup(split[1])) != null) {
-	        	String tag =  "<" + player.getColor() + player.getName() + Color.WHITE + " to §" + iShouldExist.Prefix.charAt(0) + iShouldExist.Name + Color.WHITE + "> ";
-	        	String message = tag + MessageParser.combineSplit(2, split, " ");
-	        	String [] functionParam = {split[1], player.getName()};
-	        	this.rTriggers.sendToGroups(functionParam, message,player);
-        	} else {
-        		player.sendMessage(Color.RED + "Invalid group name!");
-        	}
-        	event.setCancelled(true);
-        	return;
-        }    */
+		
         if (split[0].equalsIgnoreCase("/rTriggers")) {
-			this.rTriggers.triggerMessagesWithOption(player, "onrTriggers");
+			this.rTriggers.triggerMessagesWithOption(player, "onrTriggers", replaceTheseArray, withTheseArray);
 			event.setCancelled(true);
 		}
 		
