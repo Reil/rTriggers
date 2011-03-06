@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
@@ -28,6 +29,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.croemmich.serverevents.*;
 
 import com.nijiko.coelho.iConomy.iConomy;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
 import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
@@ -44,10 +47,11 @@ public class rTriggers extends JavaPlugin {
 	
 	
 	String defaultGroup = "default";
-	String versionNumber = "0.6_7";
+	String versionNumber = "1.0";
 	
 	private boolean useiConomy = false;
 	private iConomy iConomyPlugin;
+	private PermissionHandler PermissionsPlugin;
     private ServerListener Listener = new Listener();
 	 
 	public void registerEvents(){
@@ -64,15 +68,17 @@ public class rTriggers extends JavaPlugin {
 		loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLUGIN_ENABLE, Listener, Priority.Monitor, this);
 		registered = true;
-	}  
+	} 
 	public void onEnable(){
 		MCServer = getServer();
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
-		/*
-		 * TODO: When we get groups again, finally.
-		if (etc.getDataSource().getDefaultGroup() != null)
-			defaultGroup = etc.getDataSource().getDefaultGroup().Name;*/
+        if (MCServer.getPluginManager().getPlugin("Permissions") != null){
+        	PermissionsPlugin = Permissions.Security;
+        	log.info("[rTriggers] Attached plugin to Permissions.");
+        }
+        
+        
 		
 		try {
 			Messages.load();
@@ -128,15 +134,11 @@ public class rTriggers extends JavaPlugin {
 	
 	public void triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
-		/* Obtain triggerer's group list */
-		/* TODO: Reimpliment when Groups come back
-		if (triggerMessage.hasNoGroups()){
-			groupArray.add(defaultGroup);
-		} else {
-			groupArray.addAll(Arrays.asList(triggerMessage.getGroups()));
-		}*/
 		if (triggerMessage != null){
 			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
+			if(PermissionsPlugin != null){
+				groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerMessage.getWorld().getName(),triggerMessage.getName())));
+			}
 		} else {
 			groupArray.add("<<customtrigger>>");
 		}
@@ -305,29 +307,14 @@ public class rTriggers extends JavaPlugin {
 	
 	public HashMap<Player, Player> constructPlayerList(String [] inTheseGroups, HashMap<Player,Player> List){
 		for (Player addMe: MCServer.getOnlinePlayers()){
-			if (!List.containsKey(addMe)){
-				/*
-				 * TODO: Reimplement this when groups come back.
-				if (addMe.hasNoGroups()) {
-					search:
-					for (String isDefault : inTheseGroups) {
-						if (isDefault.equalsIgnoreCase(defaultGroup)) {
-							List.put(addMe,addMe);
-						}
-						break search;
-					}
-				} else {
-					search:
-					for(String memberGroup : addMe.getGroups()) {
-						for(String amIHere : inTheseGroups){
-							if (memberGroup.equalsIgnoreCase(amIHere)){
-								List.put(addMe, addMe);
-								break search;
-							}
+			if (!List.containsKey(addMe) && PermissionsPlugin != null){
+				search:
+					for(String oneOfUs : inTheseGroups){
+						if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
+							List.put(addMe, addMe);
+							break search;
 						}
 					}
-				}
-				*/
 			}
 		}
 		return List;
@@ -381,6 +368,11 @@ public class rTriggers extends JavaPlugin {
                 log.info("[rTriggers] Attached to iConomy.");
                 useiConomy = true;
             }
+            if(event.getPlugin().getDescription().getName().equals("Permissions")) {
+            	PermissionsPlugin = Permissions.Security;
+                log.info("[rTriggers] Attached plugin to Permissions.");
+            }
+            
         }
     }
 }
