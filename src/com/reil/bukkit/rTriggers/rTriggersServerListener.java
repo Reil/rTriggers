@@ -9,6 +9,6 @@ public class rTriggersServerListener extends ServerListener {
 		this.rTriggers = rTriggers;
 	}
 	public void onServerCommand(ServerCommandEvent event){
-		//this.rTriggers.triggerMessagesWithOption(null, "onconsole");
+		this.rTriggers.triggerMessagesWithOption(null, "onconsole");
 	}
 }

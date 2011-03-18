@@ -49,11 +49,12 @@ public class rPropertiesFile {
         }
     }
 	
-	void load() throws IOException {
+	String[] load() throws IOException {
 		/* Go through, line by line. 
 		 * If the line starts with # or !, then save the line in list
 		 * If the line has an assignment, put the name here. */
 		Properties.clear();
+		ArrayList<String> messages = new ArrayList<String>();
 		BufferedReader reader;
 	    reader = new BufferedReader(new FileReader(fileName));
 	    String line;
@@ -77,10 +78,12 @@ public class rPropertiesFile {
 		        			Properties.put(Property, newList);
 		        		}
 	        		}
+	        		messages.add(Value);
 	    		}
 	    	}
 	    }
 	    reader.close();
+	    return messages.toArray(new String[messages.size()]);
 	}
 
 	void save(){
