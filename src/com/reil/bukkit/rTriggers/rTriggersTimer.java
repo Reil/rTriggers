@@ -64,6 +64,9 @@ public class rTriggersTimer extends TimerTask{
 
 		// Send message
 		String [] sendToGroups = Groups.split(",");
+		String [] replace = {"@"	 , "<<color>>","<<placeholder>>"};
+		String [] with    = {"\n§f"  , "§"        ,  ""};
+		message = rParser.replaceWords(message, replace, with);
 		rTriggers.sendToGroups(sendToGroups, message, null);
 		
 		// Find next sequence
