@@ -226,10 +226,15 @@ public class rTriggers extends JavaPlugin {
 					
 					// If it does match an option, we sort it out and send it
 					if (hookValid) {
+						
 						/**************************
 						 * Tag replacement start!
 						 *************************/
+						
 						String message = rParser.combineSplit(2, split, ":");
+						
+						message = replaceLists(message);
+						
 						String [] replace = {"@"	 ,"\\\n§f", "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
 						String [] with    = {"\n§f"	 ,"@",       playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
 						message = rParser.replaceWords(message, replace, with);
@@ -238,7 +243,6 @@ public class rTriggers extends JavaPlugin {
 						String [] replace2 = { "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
 						message = rParser.replaceWords(message, replace2, with2);
 						
-						message = replaceLists(message);
 						
 						if (eventToReplace.length > 0)
 							message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
