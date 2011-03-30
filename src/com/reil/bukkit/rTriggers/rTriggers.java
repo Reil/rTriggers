@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.logging.Level;
@@ -38,6 +39,7 @@ import com.reil.bukkit.rParser.rParser;
 @SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
 	public rPropertiesFile Messages;
+	Random RNG = new Random();
 	Plugin ServerEvents;
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
@@ -84,7 +86,7 @@ public class rTriggers extends JavaPlugin {
 				flag[3] = true;
 			}
 			if(!flag[4] && options.contains("ondeath")){
-				loader.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Monitor, this);
+				loader.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
 				loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
 				flag[4] = true;
 			}
@@ -228,13 +230,15 @@ public class rTriggers extends JavaPlugin {
 						 * Tag replacement start!
 						 *************************/
 						String message = rParser.combineSplit(2, split, ":");
-						String [] replace = {"@"	 , "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
-						String [] with    = {"\n§f"	 , playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
+						String [] replace = {"@"	 ,"\\\n§f", "<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
+						String [] with    = {"\n§f"	 ,"@",       playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
 						message = rParser.replaceWords(message, replace, with);
 						
 						String [] with2    = getTagReplacements(triggerMessage);
 						String [] replace2 = { "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
 						message = rParser.replaceWords(message, replace2, with2);
+						
+						message = replaceLists(message);
 						
 						if (eventToReplace.length > 0)
 							message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
@@ -248,6 +252,35 @@ public class rTriggers extends JavaPlugin {
 		}
 	}
 	
+	HashMap<String, Integer> listTracker = new HashMap<String,Integer>(); 
+	private String replaceLists(String message) {
+		int optionStart;
+		int optionEnd;
+		String listMember;
+		while ( (optionStart = message.indexOf("<<list|")) != -1){
+			optionStart += "<<list|".length();
+			optionEnd = message.indexOf(">>", optionStart);
+			String options = message.substring(optionStart, optionEnd);
+			String [] optionSplit = options.split("|");
+			// Call up the list
+			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
+			
+			if (optionSplit[1].equalsIgnoreCase("rand")){
+				listMember = messageList[RNG.nextInt(messageList.length)];
+				
+			} else {
+				if(!listTracker.containsKey(optionSplit[0])){
+					listTracker.put(optionSplit[0], 0);
+				}
+				int listNumber = listTracker.get(optionSplit[0]);
+				listMember = messageList[listNumber];
+				listTracker.put(optionSplit[0], listNumber + 1);
+			}
+			
+			message.replace("<<list|" + options + ">>", listMember); 
+		}
+		return message;
+	}
 	/**
 	 * Use in conjunction with rParser.replaceWords or rParser.parseMessage;
 	 * @param player A player to get the replacements for

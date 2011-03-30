@@ -2,10 +2,11 @@ package com.reil.bukkit.rTriggers;
 import java.util.ArrayList;
 
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.PlayerChatEvent;
-import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 
 public class rTriggersPlayerListener extends PlayerListener {
@@ -21,13 +22,13 @@ public class rTriggersPlayerListener extends PlayerListener {
 		this.rTriggers = rTriggers;
 	}
 
-	public void onPlayerJoin(PlayerEvent event){
+	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin");
 		return;
 	}
 	
-	public void onPlayerQuit(PlayerEvent event){
+	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
 		return;
@@ -45,7 +46,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
-	public void onPlayerCommandPreprocess(PlayerChatEvent event){
+	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event){
 		Player player = event.getPlayer();
 		ArrayList<String> replaceThese = new ArrayList<String>();
 		ArrayList<String> withThese = new ArrayList<String>();
