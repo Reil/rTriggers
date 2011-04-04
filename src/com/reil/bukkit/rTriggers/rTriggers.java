@@ -21,6 +21,7 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.event.server.PluginEvent;
 import org.bukkit.event.server.ServerListener;
 import org.bukkit.plugin.Plugin;
@@ -145,7 +146,7 @@ public class rTriggers extends JavaPlugin {
 
         public Listener() { }
 
-        public void onPluginEnabled(PluginEvent event) {
+        public void onPluginEnable(PluginEnableEvent event) {
             if(event.getPlugin().getDescription().getName().equals("iConomy")) {
                 log.info("[rTriggers] Attached to iConomy.");
                 useiConomy = true;
