@@ -236,8 +236,8 @@ public class rTriggers extends JavaPlugin {
 						
 						message = replaceLists(message);
 						
-						String [] replace = {"@"     ,  "\\="   ,"<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
-						String [] with    = {"\n§f" ,  "@"       , playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
+						String [] replace = {"\\@"	 ,"<<player-list>>", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
+						String [] with    = {"\n§f"  ,  playerList       , "§"/*,triggerMessage.getColor(),*/    ,""};
 						message = rParser.replaceWords(message, replace, with);
 						
 						String [] with2    = getTagReplacements(triggerMessage);
@@ -266,23 +266,23 @@ public class rTriggers extends JavaPlugin {
 			optionStart += "<<list|".length();
 			optionEnd = message.indexOf(">>", optionStart);
 			String options = message.substring(optionStart, optionEnd);
-			String [] optionSplit = options.split("|");
+			String [] optionSplit = options.split("\\|");
 			// Call up the list
-			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
-			
-			if (optionSplit[1].equalsIgnoreCase("rand")){
-				listMember = messageList[RNG.nextInt(messageList.length)];
-				
-			} else {
-				if(!listTracker.containsKey(optionSplit[0])){
-					listTracker.put(optionSplit[0], 0);
+			String getThis = "<<list|" + optionSplit[0] + ">>";
+			String [] messageList = Messages.getStrings(getThis);
+			if (messageList.length > 0){
+				if (optionSplit.length > 1 && optionSplit[1].equalsIgnoreCase("rand")){
+						listMember = messageList[RNG.nextInt(messageList.length)];
+				} else {
+					if(!listTracker.containsKey(optionSplit[0])){
+						listTracker.put(optionSplit[0], 0);
+					}
+					int listNumber = listTracker.get(optionSplit[0]);
+					listMember = messageList[listNumber];
+					listTracker.put(optionSplit[0], listNumber + 1);
 				}
-				int listNumber = listTracker.get(optionSplit[0]);
-				listMember = messageList[listNumber];
-				listTracker.put(optionSplit[0], listNumber + 1);
-			}
-			
-			message.replace("<<list|" + options + ">>", listMember); 
+			} else listMember = "";
+			message = message.replace("<<list|" + options + ">>", listMember);
 		}
 		return message;
 	}
