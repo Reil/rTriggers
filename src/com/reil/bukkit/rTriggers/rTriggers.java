@@ -279,7 +279,7 @@ public class rTriggers extends JavaPlugin {
 					}
 					int listNumber = listTracker.get(optionSplit[0]);
 					listMember = messageList[listNumber];
-					listTracker.put(optionSplit[0], listNumber + 1);
+					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
 				}
 			} else listMember = "";
 			message = message.replace("<<list|" + options + ">>", listMember);
