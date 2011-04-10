@@ -69,31 +69,33 @@ public class rTriggers extends JavaPlugin {
 		Arrays.fill(flag, false);
 		for(String message : messages){
 			String [] split = message.split(":");
-			String options = split[1];
-			if(!flag[0] && (options.contains("onlogin") || options.isEmpty())){
-				loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-				flag[0] = true;
-			}
-			if(!flag[1] && options.contains("ondisconnect")){
-				loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
-				flag[1] = true;
-			}
-			if(!flag[2] && options.contains("oncommand")){
-				loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
-				flag[2] = true;
-			}
-			if(!flag[3] && options.contains("onkick")){
-				loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
-				flag[3] = true;
-			}
-			if(!flag[4] && options.contains("ondeath")){
-				loader.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
-				loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
-				flag[4] = true;
-			}
-			if(!flag[5] && options.contains("onconsole")){
-				loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
-				flag[5] = true;
+			if(split.length >= 1){
+				String options = split[1];
+				if(!flag[0] && (options.contains("onlogin") || options.isEmpty())){
+					loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
+					flag[0] = true;
+				}
+				if(!flag[1] && options.contains("ondisconnect")){
+					loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+					flag[1] = true;
+				}
+				if(!flag[2] && options.contains("oncommand")){
+					loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
+					flag[2] = true;
+				}
+				if(!flag[3] && options.contains("onkick")){
+					loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
+					flag[3] = true;
+				}
+				if(!flag[4] && options.contains("ondeath")){
+					loader.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
+					loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
+					flag[4] = true;
+				}
+				if(!flag[5] && options.contains("onconsole")){
+					loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
+					flag[5] = true;
+				}
 			}
 		}
 		
