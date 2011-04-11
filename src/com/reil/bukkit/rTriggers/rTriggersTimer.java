@@ -27,7 +27,7 @@ public class rTriggersTimer extends TimerTask{
 		if (progression == random){
 			this.nextMessage =  generator.nextInt(Messages.length);
 		} else if (progression == sequential){
-			this.nextMessage = 1;
+			this.nextMessage = 1 % Messages.length;
 		} else {
 			// Error?
 		}
@@ -50,7 +50,7 @@ public class rTriggersTimer extends TimerTask{
 	
 	public void run() {
 		// parse into groups, next time, 'progression'
-		String toParse = Messages[nextMessage];
+		String toParse = Messages[nextMessage%Messages.length];
 		String [] split =  toParse.split(":");
 		String [] options =  split[1].split(",");
 		String Groups = split[0];
