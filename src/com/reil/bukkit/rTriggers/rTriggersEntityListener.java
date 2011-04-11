@@ -25,6 +25,7 @@ public class rTriggersEntityListener extends EntityListener{
 	public void onEntityDeath (EntityDeathEvent event) {
 		String deathBy; 
 		String triggerOption;
+		if (event.getEntity() == null) return;
 		if(!(event.getEntity() instanceof Player)) return;
 		Player deadGuy = (Player) event.getEntity();
 		EntityDamageEvent.DamageCause causeOfDeath = deathCause.get(deadGuy);

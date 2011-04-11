@@ -69,7 +69,7 @@ public class rTriggers extends JavaPlugin {
 		Arrays.fill(flag, false);
 		for(String message : messages){
 			String [] split = message.split(":");
-			if(split.length >= 1){
+			if(split.length >= 2){
 				String options = split[1];
 				if(!flag[0] && (options.contains("onlogin") || options.isEmpty())){
 					loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
