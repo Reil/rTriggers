@@ -63,6 +63,8 @@ public class rTriggersTimer extends TimerTask{
 		String message = rParser.combineSplit(2, split, ":");
 
 		// Send message
+		message = rTriggers.replaceLists(message);
+		
 		String [] sendToGroups = Groups.split(",");
 		String [] replace = {"@"	 , "<<color>>","<<placeholder>>"};
 		String [] with    = {"\n§f"  , "§"        ,  ""};

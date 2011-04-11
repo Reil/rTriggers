@@ -260,7 +260,7 @@ public class rTriggers extends JavaPlugin {
 	}
 	
 	HashMap<String, Integer> listTracker = new HashMap<String,Integer>(); 
-	private String replaceLists(String message) {
+	public String replaceLists(String message) {
 		int optionStart;
 		int optionEnd;
 		String listMember;
