@@ -14,10 +14,13 @@ import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerListener;
@@ -45,6 +48,7 @@ public class rTriggers extends JavaPlugin {
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
 	ServerListener serverListener = new rTriggersServerListener(this);
+	private ServerListener Listener = new Listener();
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer;
 	Timer scheduler;
@@ -56,7 +60,10 @@ public class rTriggers extends JavaPlugin {
 	private boolean useiConomy = false;
 	private iConomy iConomyPlugin;
 	private PermissionHandler PermissionsPlugin;
-    private ServerListener Listener = new Listener();
+    
+    HashMap <String, Integer> listTracker = new HashMap<String,Integer>();
+	HashMap <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
+	HashMap <Integer, Entity> deathBringer = new HashMap <Integer, Entity>();
 
     /**
      * Goes through each message in messages[] and registers events that it sees in each.
@@ -172,17 +179,18 @@ public class rTriggers extends JavaPlugin {
 	/* Looks through all of the messages,
 	 * Sends the messages triggered by groups which 'triggerMessage' is a member of,
 	 * But only if that message has the contents of 'option' as one of its options */
-	public void triggerMessagesWithOption(Player triggerMessage, String option){
+	public boolean triggerMessagesWithOption(Player triggerMessage, String option){
 		String[] eventToReplace = new String[0];
 		String[] eventReplaceWith = new String[0];
-		triggerMessagesWithOption(triggerMessage, option, eventToReplace, eventReplaceWith);
+		return triggerMessagesWithOption(triggerMessage, option, eventToReplace, eventReplaceWith);
 	}
-	public void triggerMessagesWithOption(String option, String[] eventToReplace, String []eventReplaceWith){
-		triggerMessagesWithOption(null, option, eventToReplace, eventReplaceWith);
+	public boolean triggerMessagesWithOption(String option, String[] eventToReplace, String []eventReplaceWith){
+		return triggerMessagesWithOption(null, option, eventToReplace, eventReplaceWith);
 	}
 	
-	public void triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
+	public boolean triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
+		boolean triggeredMessage = false;
 		/* Everyone triggers their own name*/
 		if (triggerMessage != null){
 			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
@@ -253,13 +261,14 @@ public class rTriggers extends JavaPlugin {
 						 *  Tag replacement end! */
 						
 						sendMessage(message, triggerMessage, split[0]);
+						triggeredMessage = true;
 					}
 				}
 			}
 		}
+		return triggeredMessage;
 	}
 	
-	HashMap<String, Integer> listTracker = new HashMap<String,Integer>(); 
 	public String replaceLists(String message) {
 		int optionStart;
 		int optionEnd;

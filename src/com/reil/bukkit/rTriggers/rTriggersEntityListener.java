@@ -1,15 +1,11 @@
 package com.reil.bukkit.rTriggers;
-import java.util.HashMap;
 
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.*;
 
 
 public class rTriggersEntityListener extends EntityListener{
 	private final rTriggers rTriggers;
-	HashMap <Player, EntityDamageEvent.DamageCause> deathCause = new HashMap <Player, EntityDamageEvent.DamageCause>();
-	HashMap <Player, Entity> deathBringer = new HashMap <Player, Entity>();
 	rTriggersEntityListener(rTriggers rTriggers) {
 		this.rTriggers = rTriggers;
 	}
@@ -17,9 +13,10 @@ public class rTriggersEntityListener extends EntityListener{
 	
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
-		deathCause.put((Player) event.getEntity(), event.getCause());
+		Integer gotHit = ((Player) event.getEntity()).getEntityId();
+		this.rTriggers.deathCause.put(gotHit, event.getCause());
 		if (event instanceof EntityDamageByEntityEvent){
-			((EntityDamageByEntityEvent) event).getDamager();
+			this.rTriggers.deathBringer.put(gotHit, ((EntityDamageByEntityEvent) event).getDamager());
 		}
 	}
 	public void onEntityDeath (EntityDeathEvent event) {
@@ -28,7 +25,8 @@ public class rTriggersEntityListener extends EntityListener{
 		if (event.getEntity() == null) return;
 		if(!(event.getEntity() instanceof Player)) return;
 		Player deadGuy = (Player) event.getEntity();
-		EntityDamageEvent.DamageCause causeOfDeath = deathCause.get(deadGuy);
+		Integer deadGuyId = deadGuy.getEntityId();
+		EntityDamageEvent.DamageCause causeOfDeath = this.rTriggers.deathCause.get(deadGuyId);
 		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
 		switch (causeOfDeath) {
 		case CONTACT:
@@ -80,16 +78,16 @@ public class rTriggersEntityListener extends EntityListener{
 			deathBy = "something";
 			break;
 		}
-		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK){
+		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && this.rTriggers.deathBringer.get(deadGuyId) != null){
 			String [] replaceThese = {"<<death-cause>>", "<<killer>>"};
-			if (deathBringer.get(deadGuy) instanceof Player) {
-				String [] withThese = {deathBy, ((Player)deathBringer.get(deadGuy)).getDisplayName() };
+			if (this.rTriggers.deathBringer.get(deadGuyId) instanceof Player) {
+				String [] withThese = {deathBy, ((Player) this.rTriggers.deathBringer.get(deadGuyId)).getDisplayName() };
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath", replaceThese, withThese);
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|playerkill", replaceThese, withThese);
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|entity", replaceThese, withThese);
 			} else{
-				String killer = deathBringer.get(deadGuy).getClass().getName();
+				String killer = this.rTriggers.deathBringer.get(deadGuyId).getClass().getName();
 				killer = killer.substring(killer.lastIndexOf("Craft") + "Craft".length());
 				String [] withThese = {deathBy, killer};
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath", replaceThese, withThese);
@@ -97,7 +95,6 @@ public class rTriggersEntityListener extends EntityListener{
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + killer, replaceThese, withThese);
 				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|entity", replaceThese, withThese);
 			}
-				
 		} 
 		else{
 			String [] replaceThese = {"<<death-cause>>"};

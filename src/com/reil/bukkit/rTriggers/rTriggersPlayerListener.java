@@ -31,6 +31,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
+		this.rTriggers.deathCause.remove(triggerMessage.getEntityId());
+		this.rTriggers.deathBringer.remove(triggerMessage.getEntityId());
 		return;
 	}
 	/*
@@ -65,6 +67,10 @@ public class rTriggersPlayerListener extends PlayerListener {
 			this.rTriggers.triggerMessagesWithOption(player, "onrTriggers", replaceTheseArray, withTheseArray);
 			event.setCancelled(true);
 		}
+        
+        if (this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
+        	event.setCancelled(true);
+        }
 		
 		return; 
 	}
