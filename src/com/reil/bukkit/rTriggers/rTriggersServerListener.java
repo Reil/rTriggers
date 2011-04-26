@@ -23,9 +23,9 @@ public class rTriggersServerListener extends ServerListener {
 	}
 	
 	public void checkAlreadyLoaded() {
+		PluginManager PM = rTriggers.MCServer.getPluginManager();
 		for(String checkMe:plugins){
-			PluginManager PM = rTriggers.MCServer.getPluginManager();
-			if(PM.getPlugin("Permissions") != null){
+			if(PM.getPlugin(checkMe) != null){
 				rTriggers.triggerMessagesWithOption(null, "onload|" + checkMe);
 			}
 		}
