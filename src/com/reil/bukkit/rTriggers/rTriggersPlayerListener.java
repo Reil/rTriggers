@@ -25,6 +25,9 @@ public class rTriggersPlayerListener extends PlayerListener {
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin");
+		if (this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin|override")){
+			event.setJoinMessage("");
+		}
 		return;
 	}
 	
