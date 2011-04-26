@@ -34,6 +34,9 @@ public class rTriggersPlayerListener extends PlayerListener {
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
+		if (this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect|override")){
+			event.setQuitMessage("");
+		}
 		this.rTriggers.deathCause.remove(triggerMessage.getEntityId());
 		this.rTriggers.deathBringer.remove(triggerMessage.getEntityId());
 		return;
