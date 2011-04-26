@@ -47,19 +47,15 @@ public class rTriggers extends JavaPlugin {
 	Plugin ServerEvents;
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
-	ServerListener serverListener = new rTriggersServerListener(this);
-	private ServerListener Listener = new Listener();
+	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer;
 	Timer scheduler;
 	boolean registered = false;
 	
-	
-	String defaultGroup = "default";
-	
-	private boolean useiConomy = false;
-	private iConomy iConomyPlugin;
-	private PermissionHandler PermissionsPlugin;
+	public boolean useiConomy = false;
+	public iConomy iConomyPlugin;
+	public PermissionHandler PermissionsPlugin;
     
     HashMap <String, Integer> listTracker = new HashMap<String,Integer>();
 	HashMap <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
@@ -72,7 +68,7 @@ public class rTriggers extends JavaPlugin {
 	public void registerEvents(String[] messages){
 		if (registered) return;
 		PluginManager loader = MCServer.getPluginManager();
-		boolean [] flag = new boolean[6];
+		boolean [] flag = new boolean[7];
 		Arrays.fill(flag, false);
 		for(String message : messages){
 			String [] split = message.split(":");
@@ -103,11 +99,19 @@ public class rTriggers extends JavaPlugin {
 					loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
 					flag[5] = true;
 				}
+				if(!flag[6] && options.contains("onload")){
+					for (String option: options.split(",")){
+						if (option.startsWith("onload|")) {
+							String pluginName = option.substring("onload|".length());
+							serverListener.listenFor(pluginName);
+						}
+					}
+				}
 			}
 		}
 		
 		
-		loader.registerEvent(Event.Type.PLUGIN_ENABLE, Listener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		registered = true;
 	} 
 	public void onEnable(){
@@ -148,25 +152,12 @@ public class rTriggers extends JavaPlugin {
 				scheduler.schedule(scheduleMe, scheduleMe.delay);
 			}
 		}
+		// Do onload events for everything that might have loaded before rTriggers
+		
+		serverListener.checkAlreadyLoaded();
+		
 		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
 	}
-	
-	private class Listener extends ServerListener {
-
-        public Listener() { }
-
-        public void onPluginEnable(PluginEnableEvent event) {
-            if(event.getPlugin().getDescription().getName().equals("iConomy")) {
-                log.info("[rTriggers] Attached to iConomy.");
-                useiConomy = true;
-            }
-            if(event.getPlugin().getDescription().getName().equals("Permissions")) {
-            	PermissionsPlugin = Permissions.Security;
-                log.info("[rTriggers] Attached plugin to Permissions.");
-            }
-            
-        }
-    }
 	
 	public void onDisable(){
 		Messages.save();
@@ -400,7 +391,7 @@ public class rTriggers extends JavaPlugin {
 				} else {
 					log.info("[rTriggers] ServerEvents not found!");
 				}
-			} else if (group.substring(0,9).equalsIgnoreCase("<<player|")){
+			} else if (group.startsWith("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
 				log.info(playerName);
 				Player putMe = MCServer.getPlayer(playerName);
