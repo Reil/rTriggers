@@ -201,8 +201,11 @@ public class rTriggers extends JavaPlugin {
 			playerList = players[0].getDisplayName();
 		else {
 			StringBuilder list = new StringBuilder();
+			String prefix = "";
 			for (Player getName : players){
-				list.insert(0, getName.getDisplayName() + ", ");
+				list.append(prefix);
+				prefix = ", ";
+				list.append(getName.getDisplayName());
 			}
 			playerList = list.toString();
 		}
@@ -448,7 +451,8 @@ public class rTriggers extends JavaPlugin {
 			for(String send : message.split("\n"))
 				recipient.sendMessage(send);
 		} else {
-			recipient.performCommand(message);
+			for(String command : message.split("\n"))
+				recipient.sendMessage(command);
 		}
 	}
 }

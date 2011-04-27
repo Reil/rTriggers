@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
@@ -58,38 +57,23 @@ public class rPropertiesFile {
 		ArrayList<String> messages = new ArrayList<String>();
 		BufferedReader reader;
 	    reader = new BufferedReader(new FileReader(fileName));
-	    
-	    /* This is the start of ioScream's bastardized version of line continuation.
-	     * 
-	     * It first creates and ArrayList of all the lines in the file
-	     * Then converts the ArrayList to an Array
-	     * Iterates through that array looking for lines that end in ; and
-	     *  joins that line with the line below it while creating an ArrayList
-	     * Then we go from ArrayList BACK to Array, and your code is mostly unchanged.
-	     */
-	    
+
 	    String tempLine;
-	    ArrayList<String> holder = new ArrayList<String>();
-	    //Cycle through complete contents of the file.
-	    while ((tempLine = reader.readLine()) != null) {	
-            //Check for multiple lines with <<;>> and recreate them as one line.
+	    //Cycle through complete contents of the file.	 
+	    while ((tempLine = reader.readLine()) != null) {
+	    	/*****************
+	    	* Credit for original line-continuation implementation goes to ioScream!*/
+	    	// Check for multiple lines with <<;>> and recreate them as one line.
             StringBuilder concatMe = new StringBuilder(tempLine);
-    		while (concatMe.toString().endsWith("<<;>>")){
+    		while (concatMe.toString().endsWith("$")){
                 //Skip next element because it's been merged
+    			concatMe.deleteCharAt(concatMe.length() - 1);
     			if ((tempLine = reader.readLine()) != null)
 	    			concatMe.append(tempLine);
     		}
-    		tempLine = concatMe.toString().replaceAll("<<;>>", "");
-    		holder.add(tempLine);
-	    }	 
-	    /*
-	     * End of Line Continuation hack. 
-	     * 
-	     * Only the String line has changed to String[] line and we
-	     * iterate using a for() loop rather than a while() loop.
-	     * 
-	     */
-	    for (String line:holder) {
+    		String line = concatMe.toString();
+    		// Line is now built, read it in as usual.
+    		
 	    	if (line.startsWith("#")|| line.isEmpty() || line.startsWith("\n") || line.startsWith("\r")) {
 	    		
 	    	}
