@@ -237,8 +237,8 @@ public class rTriggers extends JavaPlugin {
 						
 						message = replaceLists(message);
 						
-						String [] replace = {"(?<!\\\\)@", "<<player-list>>", "(?<!\\\\)&", "<<color>>" /*,"<<triggerer-color>>"*/,"<<placeholder>>"};
-						String [] with    = {"\n§f"      , playerList       , "§"         , "§"/*,triggerMessage.getColor(),*/    ,""};
+						String [] replace = {"(?<!\\\\)@", "<<player-list>>", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
+						String [] with    = {"\n§f"      , playerList       , "§"         , "§"        ,""};
 						message = rParser.replaceWords(message, replace, with);
 						
 						String [] with2    = getTagReplacements(triggerMessage);
