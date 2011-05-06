@@ -361,7 +361,7 @@ public class rTriggers extends JavaPlugin {
 		/* Default: Send to player unless other groups are specified.
 		 * If so, send to those instead. */
 		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>")) {
-			sendToPlayer(message, triggerMessage, false);
+			sendToPlayer(message, triggerMessage, false, false);
 		}
 		else {
 			String [] sendToGroups = Groups.split(",");
@@ -380,7 +380,8 @@ public class rTriggers extends JavaPlugin {
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
 		HashSet <Player> sendToUs = new HashSet<Player>();
 		boolean flagEveryone = false;
-		boolean flagCommand = false;
+		boolean flagCommand  = false;
+		boolean flagSay      = false;
 		/*************************************
 		 * Begin:
 		 * 1) Constructing list of groups to send to
@@ -393,9 +394,13 @@ public class rTriggers extends JavaPlugin {
 					sendToUs.add(triggerer);
 				}
 			} else if (group.equalsIgnoreCase("<<command-triggerer>>")){
-				sendToPlayer(message, triggerer, true);
+				sendToPlayer(message, triggerer, true, false);
 			} else if (group.equalsIgnoreCase("<<command-recipient>>")){
 				flagCommand = true;
+			} else if (group.equalsIgnoreCase("<<say-triggerer>>")){
+				sendToPlayer(message, triggerer, false, true);
+			} else if (group.equalsIgnoreCase("<<say-recipient>>")){
+				flagSay = true;
 			} else if (group.equalsIgnoreCase("<<everyone>>")){
 				sendToUs.clear();
 				for (Player addMe : MCServer.getOnlinePlayers())
@@ -450,7 +455,7 @@ public class rTriggers extends JavaPlugin {
 		 * Find all the  players who belong to the non-special
 		 * case groups, and send the message to them.  */
 		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs)){
-			sendToPlayer(message, sendToMe, flagCommand);
+			sendToPlayer(message, sendToMe, flagCommand, flagSay);
 		}
 	}
 	/**
@@ -473,7 +478,7 @@ public class rTriggers extends JavaPlugin {
 		return list;
 	}
 	
-	public void sendToPlayer(String message, Player recipient, boolean flagCommand) {
+	public void sendToPlayer(String message, Player recipient, boolean flagCommand, boolean flagSay) {
 		String [] with = getTagReplacements(recipient);
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
 		message = rParser.parseMessage(message, replace, with);
