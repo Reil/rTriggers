@@ -10,7 +10,7 @@ public class rTriggersEntityListener extends EntityListener{
 		this.rTriggers = rTriggers;
 	}
 	
-	
+	@Override
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
 		Integer gotHit = ((Player) event.getEntity()).getEntityId();
@@ -19,6 +19,7 @@ public class rTriggersEntityListener extends EntityListener{
 			this.rTriggers.deathBringer.put(gotHit, ((EntityDamageByEntityEvent) event).getDamager());
 		}
 	}
+	@Override
 	public void onEntityDeath (EntityDeathEvent event) {
 		String deathBy; 
 		String triggerOption;

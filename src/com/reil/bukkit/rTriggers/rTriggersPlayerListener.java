@@ -21,7 +21,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 	rTriggersPlayerListener(rTriggers rTriggers) {
 		this.rTriggers = rTriggers;
 	}
-
+	
+	@Override
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin");
@@ -31,6 +32,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		return;
 	}
 	
+	@Override
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
@@ -41,12 +43,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 		this.rTriggers.deathBringer.remove(triggerMessage.getEntityId());
 		return;
 	}
-	/*
-	public void onBan(Player mod, Player triggerMessage, java.lang.String reason) {
-		String [] replaceThese = {"<<ban-reason>>", "<<ban-setter>>", "<<ban-recipient>>"     };
-		String [] withThese =    {reason          , mod.getName()   , triggerMessage.getName()};
-		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onban", replaceThese, withThese);
-	}*/
+	
+	@Override
 	public void onPlayerKick(PlayerKickEvent event){
 		Player triggerMessage = event.getPlayer();
 		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
@@ -54,6 +52,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
+	@Override
 	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event){
 		Player player = event.getPlayer();
 		ArrayList<String> replaceThese = new ArrayList<String>();

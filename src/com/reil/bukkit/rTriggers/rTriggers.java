@@ -35,7 +35,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import org.bukkit.croemmich.serverevents.*;
 
-import com.nijiko.coelho.iConomy.iConomy;
+import com.ensifera.animosity.craftirc.CraftIRC;
+import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 import com.reil.bukkit.rParser.rParser;
@@ -53,8 +54,8 @@ public class rTriggers extends JavaPlugin {
 	Timer scheduler;
 	boolean registered = false;
 	
-	public boolean useiConomy = false;
 	public iConomy iConomyPlugin;
+	public CraftIRC craftIRCHandle;
 	public PermissionHandler PermissionsPlugin;
     
     HashMap <String, Integer> listTracker = new HashMap<String,Integer>();
@@ -110,26 +111,57 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		
-		
 		loader.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
+		loader.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
 		registered = true;
 	} 
 	public void onEnable(){
 		MCServer = getServer();
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
-        if (MCServer.getPluginManager().getPlugin("Permissions") != null){
-        	PermissionsPlugin = Permissions.Security;
-        	log.info("[rTriggers] Attached plugin to Permissions.");
-        }
 
 		try {
+			grabPlugins();
 			registerEvents(Messages.load());
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
+		generateTimers();
 		
-		/* Go through all timer messages, create rTriggersTimers for each unique list */
+		// Do onload events for everything that might have loaded before rTriggers
+		serverListener.checkAlreadyLoaded();
+		
+		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
+	}
+	
+	/**
+	 *  Checks to see if plugins which rTriggers supports have already been loaded.
+	 *  Registers rTriggers with already-loaded plugins it finds.
+	 */
+	public void grabPlugins() {
+		if (MCServer.getPluginManager().getPlugin("Permissions") != null){
+        	PermissionsPlugin = Permissions.Security;
+        	log.info("[rTriggers] Attached to Permissions.");
+        }
+        
+        Plugin iConomyTry = MCServer.getPluginManager().getPlugin("iConomy");
+        if (iConomyTry != null){
+        	iConomyPlugin = (iConomy) iConomyTry;
+        	log.info("[rTriggers] Attached to iConomy.");
+        }
+        
+        Plugin CraftIRCTry = this.getServer().getPluginManager().getPlugin("CraftIRC");
+        if (CraftIRCTry != null){
+        	craftIRCHandle = (CraftIRC) CraftIRCTry;
+        	log.info("[rTriggers] Attached to CraftIRC.");
+        }
+	}
+	
+	/*
+	 * Precondition: We already have messages loaded
+	 * Postcondition: New threads for each timer have been created.  
+	 */
+	public void generateTimers(){
 		if (Messages.keyExists("<<timer>>")){
 			HashMap<String, ArrayList<String>> timerLists = new HashMap <String, ArrayList<String>>();
 			scheduler = new Timer();
@@ -152,13 +184,9 @@ public class rTriggers extends JavaPlugin {
 				scheduler.schedule(scheduleMe, scheduleMe.delay);
 			}
 		}
-		// Do onload events for everything that might have loaded before rTriggers
-		
-		serverListener.checkAlreadyLoaded();
-		
-		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
 	}
 	
+	@Override
 	public void onDisable(){
 		Messages.save();
 		if (scheduler != null) scheduler.cancel();
@@ -303,9 +331,9 @@ public class rTriggers extends JavaPlugin {
 		}
 		// Get <<triggerer-balance>> tag
 		double balance = 0;
-		if (useiConomy){
-			if (iConomy.getBank().hasAccount(player.getName())) {
-				balance = iConomy.getBank().getAccount(player.getName()).getBalance();
+		if (iConomyPlugin != null){
+			if (iConomy.hasAccount(player.getName())) {
+				balance = iConomy.getAccount(player.getName()).getHoldings().balance();
 			}
 		}
 		
@@ -394,7 +422,7 @@ public class rTriggers extends JavaPlugin {
 				} else {
 					log.info("[rTriggers] ServerEvents not found!");
 				}
-			} else if (group.startsWith("<<player|")){
+			} else if (group.toLowerCase().startsWith("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
 				log.info(playerName);
 				Player putMe = MCServer.getPlayer(playerName);
@@ -408,6 +436,8 @@ public class rTriggers extends JavaPlugin {
 				} catch (IOException e) { 
 					e.printStackTrace();
 				}
+			} else if (group.toLowerCase().startsWith("<<craftirc|") && craftIRCHandle != null) {
+				craftIRCHandle.sendMessageToTag(message, group.substring(11, group.length()-2));
 			}
 			/**********************
 			 * Special cases end!*/
@@ -451,7 +481,7 @@ public class rTriggers extends JavaPlugin {
 			for(String send : message.split("\n"))
 				recipient.sendMessage(send);
 		} else {
-			for(String command : message.split("\n"))
+			for(String command : message.split("\n§f"))
 				recipient.sendMessage(command);
 		}
 	}
