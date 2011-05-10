@@ -51,7 +51,7 @@ public class rTriggers extends JavaPlugin {
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer;
-	Timer scheduler;
+	private Timer scheduler;
 	boolean registered = false;
 	
 	public iConomy iConomyPlugin;
@@ -162,7 +162,23 @@ public class rTriggers extends JavaPlugin {
 	 * Postcondition: New threads for each timer have been created.  
 	 */
 	public void generateTimers(){
+		
+		for(String key : Messages.getKeys()){
+			if (key.startsWith("<<timer|")){
+				for(String message : Messages.getStrings(key)){
+					MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
+							new rTriggersTimer(this, message),
+							0,
+							20 * new Long(key.substring(8, key.length()-2)));
+				}
+			}
+		}
+		
+		/**
+		 * Ooold Timers generated here!
+		 */
 		if (Messages.keyExists("<<timer>>")){
+			log.info("[rTriggers] Warning! You are using the old timer syntax!  Update to the new one, using <<timer|timegoeshere>>, with no options!");
 			HashMap<String, ArrayList<String>> timerLists = new HashMap <String, ArrayList<String>>();
 			scheduler = new Timer();
 			// Sort all the timer messages into lists 
@@ -180,7 +196,7 @@ public class rTriggers extends JavaPlugin {
 				// rTriggersTimer(rTriggers rTriggers, Timer timer, String [] Messages)
 				ArrayList<String> sendTheseAList = timerLists.get(key);
 				String [] sendThese = sendTheseAList.toArray(new String[sendTheseAList.size()]);
-				rTriggersTimer scheduleMe = new rTriggersTimer(this, scheduler, sendThese); 
+				rTriggersTimerOld scheduleMe = new rTriggersTimerOld(this, scheduler, sendThese); 
 				scheduler.schedule(scheduleMe, scheduleMe.delay);
 			}
 		}
@@ -190,6 +206,7 @@ public class rTriggers extends JavaPlugin {
 	public void onDisable(){
 		Messages.save();
 		if (scheduler != null) scheduler.cancel();
+		MCServer.getScheduler().cancelTasks(this);
 		PluginManager loader = MCServer.getPluginManager();
 		log.info("[rTriggers] Disabled!");
 	} 
@@ -222,22 +239,6 @@ public class rTriggers extends JavaPlugin {
 			groupArray.add("<<customtrigger>>");
 		}
 		
-		/* Obtain list of online players */
-		String playerList = new String();
-		Player [] players = MCServer.getOnlinePlayers();
-		if (players.length == 1)
-			playerList = players[0].getDisplayName();
-		else {
-			StringBuilder list = new StringBuilder();
-			String prefix = "";
-			for (Player getName : players){
-				list.append(prefix);
-				prefix = ", ";
-				list.append(getName.getDisplayName());
-			}
-			playerList = list.toString();
-		}
-		
 		/* Check for messages triggered by each group the player is a member of. */
 		for (String groupName : groupArray){
 			if (Messages.keyExists(groupName)){
@@ -268,8 +269,8 @@ public class rTriggers extends JavaPlugin {
 						
 						message = replaceLists(message);
 						
-						String [] replace = {"(?<!\\\\)@", "<<player-list>>", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-						String [] with    = {"\n§f"      , playerList       , "§"         , "§"        ,""};
+						String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
+						String [] with    = {"\n§f"      , "§"         , "§"        ,""};
 						message = rParser.replaceWords(message, replace, with);
 						
 						String [] with2    = getTagReplacements(triggerMessage);
@@ -291,10 +292,15 @@ public class rTriggers extends JavaPlugin {
 		return triggeredMessage;
 	}
 	
+	/*
+	 * Will replace user-generated lists, as well as the player list.
+	 */
 	public String replaceLists(String message) {
 		int optionStart;
 		int optionEnd;
 		String listMember;
+		
+		// Replace user-generated lists:
 		while ( (optionStart = message.indexOf("<<list|")) != -1){
 			optionStart += "<<list|".length();
 			optionEnd = message.indexOf(">>", optionStart);
@@ -317,6 +323,26 @@ public class rTriggers extends JavaPlugin {
 			} else listMember = "";
 			message = message.replace("<<list|" + options + ">>", listMember);
 		}
+		
+		// Now replace any use of <<player-list>>
+		if(message.contains("<<player-list>>")){
+			String playerList;
+			Player [] players = MCServer.getOnlinePlayers();
+			if (players.length == 1)
+				playerList = players[0].getDisplayName();
+			else {
+				StringBuilder list = new StringBuilder();
+				String prefix = "";
+				for (Player getName : players){
+					list.append(prefix);
+					prefix = ", ";
+					list.append(getName.getDisplayName());
+				}
+				playerList = list.toString();
+			}
+			message = message.replaceAll("<<player-list>>", playerList);
+		}
+		
 		return message;
 	}
 	/**
@@ -331,11 +357,8 @@ public class rTriggers extends JavaPlugin {
 		}
 		// Get <<triggerer-balance>> tag
 		double balance = 0;
-		if (iConomyPlugin != null){
-			if (iConomy.hasAccount(player.getName())) {
+		if (iConomyPlugin != null && iConomy.hasAccount(player.getName()))
 				balance = iConomy.getAccount(player.getName()).getHoldings().balance();
-			}
-		}
 		
 		// Get <<triggerer-ip>> and <<triggerer-locale>> tags
 		InetSocketAddress triggerIP = player.getAddress();
@@ -345,11 +368,7 @@ public class rTriggers extends JavaPlugin {
 			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(triggerIP.getAddress());
 			triggerCountry = playersHere.getDisplayCountry();
 			triggerLocale = playersHere.getDisplayName();
-		} catch (net.sf.javainetlocator.InetAddressLocatorException e) {
-			e.printStackTrace();
-			triggerCountry = "";
-			triggerLocale = "";
-		} catch (NoClassDefFoundError e){
+		} catch (Exception e){
 			triggerCountry = ""; 
 			triggerLocale = "";
 		}
@@ -357,7 +376,7 @@ public class rTriggers extends JavaPlugin {
 		return returnArray; 
 	}
 
-	private void sendMessage(String message, Player triggerMessage, String Groups){
+	public void sendMessage(String message, Player triggerMessage, String Groups){
 		/* Default: Send to player unless other groups are specified.
 		 * If so, send to those instead. */
 		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>")) {
@@ -429,7 +448,6 @@ public class rTriggers extends JavaPlugin {
 				}
 			} else if (group.toLowerCase().startsWith("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
-				log.info(playerName);
 				Player putMe = MCServer.getPlayer(playerName);
 				if (putMe != null)
 					sendToUs.add(putMe);

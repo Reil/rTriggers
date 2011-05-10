@@ -67,7 +67,7 @@ public class rTriggersServerListener extends ServerListener {
         if (rTriggers.iConomyPlugin != null) {
             if (event.getPlugin().getDescription().getName().equals("iConomy")) {
             	rTriggers.iConomyPlugin = null;
-                System.out.println("[MyPlugin] un-hooked from iConomy.");
+                System.out.println("[rTriggers] Unattached from iConomy.");
             }
         }
     }
