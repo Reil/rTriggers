@@ -227,13 +227,13 @@ public class rTriggers extends JavaPlugin {
 	public boolean triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
 		boolean triggeredMessage = false;
-		/* Everyone triggers their own name*/
 		if (triggerMessage != null){
+			/* Everyone triggers their own name */
 			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
-			if(PermissionsPlugin != null){
-				groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerMessage.getWorld().getName(),triggerMessage.getName())));
-			}
+			/* Everyone triggers, well, <<everyone>> */
 			groupArray.add("<<everyone>>");
+			/* Add any groups the user's a member of. */
+			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerMessage.getWorld().getName(),triggerMessage.getName())));
 		} else {
 			// If there's no player, then we have a custom trigger field
 			groupArray.add("<<customtrigger>>");
@@ -251,9 +251,9 @@ public class rTriggers extends JavaPlugin {
 					// See if any of the options of this message match the one we called the funciton with
 					if (split[1].isEmpty() && option.equalsIgnoreCase("onlogin")){
 						// Default case:
-						// No options in the message, and we're triggerin an onlogin case.
+						// No options in the message, and we're triggering an onlogin case.
 						hookValid = true;
-					} else for (int i = 0; i <options.length && hookValid == false; i++){
+					} else for (int i = 0; i < options.length && hookValid == false; i++){
 						// Otherwise, just check each option, see if it matches the parameter
 						hookValid = options[i].equalsIgnoreCase(option);
 					}
@@ -307,15 +307,13 @@ public class rTriggers extends JavaPlugin {
 			String options = message.substring(optionStart, optionEnd);
 			String [] optionSplit = options.split("\\|");
 			// Call up the list
-			String getThis = "<<list|" + optionSplit[0] + ">>";
-			String [] messageList = Messages.getStrings(getThis);
+			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
 			if (messageList.length > 0){
 				if (optionSplit.length > 1 && optionSplit[1].equalsIgnoreCase("rand")){
 						listMember = messageList[RNG.nextInt(messageList.length)];
 				} else {
-					if(!listTracker.containsKey(optionSplit[0])){
+					if(!listTracker.containsKey(optionSplit[0]))
 						listTracker.put(optionSplit[0], 0);
-					}
 					int listNumber = listTracker.get(optionSplit[0]);
 					listMember = messageList[listNumber];
 					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
@@ -379,13 +377,10 @@ public class rTriggers extends JavaPlugin {
 	public void sendMessage(String message, Player triggerMessage, String Groups){
 		/* Default: Send to player unless other groups are specified.
 		 * If so, send to those instead. */
-		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>")) {
+		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>"))
 			sendToPlayer(message, triggerMessage, false, false);
-		}
-		else {
-			String [] sendToGroups = Groups.split(",");
-			sendToGroups(sendToGroups, message, triggerMessage);
-		}
+		else
+			sendToGroups(Groups.split(","), message, triggerMessage);
 	}
 
 	/**
@@ -398,7 +393,6 @@ public class rTriggers extends JavaPlugin {
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
 		HashSet <Player> sendToUs = new HashSet<Player>();
-		boolean flagEveryone = false;
 		boolean flagCommand  = false;
 		boolean flagSay      = false;
 		/*************************************
@@ -408,24 +402,16 @@ public class rTriggers extends JavaPlugin {
 		for (String group : sendToGroups){
 			/*************************
 			 * Special cases start! */
-			if (group.equalsIgnoreCase("<<triggerer>>")) {
-				if (triggerer != null){
-					sendToUs.add(triggerer);
-				}
-			} else if (group.equalsIgnoreCase("<<command-triggerer>>")){
-				sendToPlayer(message, triggerer, true, false);
-			} else if (group.equalsIgnoreCase("<<command-recipient>>")){
-				flagCommand = true;
-			} else if (group.equalsIgnoreCase("<<say-triggerer>>")){
-				sendToPlayer(message, triggerer, false, true);
-			} else if (group.equalsIgnoreCase("<<say-recipient>>")){
-				flagSay = true;
-			} else if (group.equalsIgnoreCase("<<everyone>>")){
-				sendToUs.clear();
-				for (Player addMe : MCServer.getOnlinePlayers())
-					sendToUs.add(addMe);
-				flagEveryone = true;
-			} else if (group.equalsIgnoreCase("<<server>>")) {
+			if (group.equalsIgnoreCase("<<triggerer>>") && triggerer != null) sendToUs.add(triggerer);
+			else if (group.equalsIgnoreCase("<<command-triggerer>>")) sendToPlayer(message, triggerer, true, false);
+			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
+			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
+			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
+			else if (group.toLowerCase().startsWith("<<craftirc|") && craftIRCHandle != null)
+				craftIRCHandle.sendMessageToTag(message, group.substring(11, group.length()-2));
+			else if (group.equalsIgnoreCase("<<everyone>>"))
+				for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
+			else if (group.equalsIgnoreCase("<<server>>")) {
 				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 				String [] with    = {"server", "", "", "", ""};
 				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
@@ -459,8 +445,6 @@ public class rTriggers extends JavaPlugin {
 				} catch (IOException e) { 
 					e.printStackTrace();
 				}
-			} else if (group.toLowerCase().startsWith("<<craftirc|") && craftIRCHandle != null) {
-				craftIRCHandle.sendMessageToTag(message, group.substring(11, group.length()-2));
 			}
 			/**********************
 			 * Special cases end!*/
@@ -500,12 +484,11 @@ public class rTriggers extends JavaPlugin {
 		String [] with = getTagReplacements(recipient);
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
 		message = rParser.parseMessage(message, replace, with);
-		if (flagCommand == false){
-			for(String send : message.split("\n"))
-				recipient.sendMessage(send);
-		} else {
-			for(String command : message.split("\n§f"))
-				recipient.sendMessage(command);
-		}
+		if(flagCommand)
+			for(String command : message.split("\n§f")) recipient.performCommand(command);
+		if (flagSay)
+			for(String sayThis : message.split("\n"))   recipient.chat(sayThis);
+		if (!flagCommand && !flagSay)
+			for(String sendMe  : message.split("\n"))   recipient.sendMessage(sendMe);
 	}
 }
