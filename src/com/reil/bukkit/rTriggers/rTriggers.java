@@ -482,11 +482,11 @@ public class rTriggers extends JavaPlugin {
 		String [] with = getTagReplacements(recipient);
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
 		message = rParser.parseMessage(message, replace, with);
-		if(flagCommand)
-			for(String command : message.split("\n§f")) recipient.performCommand(command);
 		if (flagSay)
 			for(String sayThis : message.split("\n"))   recipient.chat(sayThis);
 		if (!flagCommand && !flagSay)
 			for(String sendMe  : message.split("\n"))   recipient.sendMessage(sendMe);
+		if(flagCommand)
+			for(String command : message.split("\n")) recipient.performCommand(command.replaceAll("§.", ""));
 	}
 }
