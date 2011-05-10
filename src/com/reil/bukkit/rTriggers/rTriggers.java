@@ -33,6 +33,7 @@ import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.croemmich.serverevents.*;
 
 import com.ensifera.animosity.craftirc.CraftIRC;
@@ -51,6 +52,7 @@ public class rTriggers extends JavaPlugin {
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	Logger log = Logger.getLogger("Minecraft");
 	Server MCServer;
+	ConsoleCommandSender Console;
 	private Timer scheduler;
 	boolean registered = false;
 	
@@ -117,6 +119,7 @@ public class rTriggers extends JavaPlugin {
 	} 
 	public void onEnable(){
 		MCServer = getServer();
+		Console = new ConsoleCommandSender(MCServer);
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
 
@@ -391,6 +394,7 @@ public class rTriggers extends JavaPlugin {
 	 * @param triggerer The player that triggered this message (can be null, if no triggerer)
 	 */
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
+		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
 		HashSet <Player> sendToUs = new HashSet<Player>();
 		boolean flagCommand  = false;
@@ -403,24 +407,24 @@ public class rTriggers extends JavaPlugin {
 			/*************************
 			 * Special cases start! */
 			if (group.equalsIgnoreCase("<<triggerer>>") && triggerer != null) sendToUs.add(triggerer);
-			else if (group.equalsIgnoreCase("<<command-triggerer>>")) sendToPlayer(message, triggerer, true, false);
-			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
 			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
 			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
+			else if (group.equalsIgnoreCase("<<command-triggerer>>")) sendToPlayer(message, triggerer, true, false);
+			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
+			else if (group.equalsIgnoreCase("<<command-console>>"))
+				for(String command : message.split("\n§f")) MCServer.dispatchCommand(Console, command);
 			else if (group.toLowerCase().startsWith("<<craftirc|") && craftIRCHandle != null)
 				craftIRCHandle.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<everyone>>"))
 				for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
 			else if (group.equalsIgnoreCase("<<server>>")) {
-				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 				String [] with    = {"server", "", "", "", ""};
 				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
 				for(String send : serverMessage.split("\n"))
 					log.info(send);
 			}
 			else if (group.equalsIgnoreCase("<<twitter>>")){
-				String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>"};
-				String [] with    = {"Twitter", "", "", ""};
+				String [] with    = {"Twitter", "", "", "",""};
 				String twitterMessage = rParser.parseMessage(message, replace, with);
 				Plugin ServerEvents = MCServer.getPluginManager().getPlugin("ServerEvents");
 				if (ServerEvents != null){
@@ -429,9 +433,7 @@ public class rTriggers extends JavaPlugin {
 					} catch (ClassCastException ex){
 						log.info("[rTriggers] ServerEvents not found!");
 					}
-				} else {
-					log.info("[rTriggers] ServerEvents not found!");
-				}
+				} else  log.info("[rTriggers] ServerEvents not found!");
 			} else if (group.toLowerCase().startsWith("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
 				Player putMe = MCServer.getPlayer(playerName);
@@ -442,15 +444,11 @@ public class rTriggers extends JavaPlugin {
 				log.info("[rTriggers] Executing:" + message);
 				try {
 					Process pr = rt.exec(message);
-				} catch (IOException e) { 
-					e.printStackTrace();
-				}
+				} catch (IOException e) { e.printStackTrace(); }
 			}
 			/**********************
 			 * Special cases end!*/
-			else {
-				sendToGroupsFiltered.add(group);
-			}
+			else sendToGroupsFiltered.add(group);
 		}
 		/****************************************************
 		 * List of non-special case groups has been constructed.
@@ -466,15 +464,15 @@ public class rTriggers extends JavaPlugin {
 	 * @return A set containing players from list and players who are members of groups[]
 	 */
 	public Set<Player> constructPlayerList(String [] groups, HashSet<Player> list){
+		if (PermissionsPlugin == null) return list;
 		for (Player addMe: MCServer.getOnlinePlayers()){
-			if (PermissionsPlugin != null && !list.contains(addMe)){
-				search:
-					for(String oneOfUs : groups){
-						if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
-							list.add(addMe);
-							break search;
-						}
+			if (!list.contains(addMe)){
+				for(String oneOfUs : groups){
+					if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
+						list.add(addMe);
+						break;
 					}
+				}
 			}
 		}
 		return list;
