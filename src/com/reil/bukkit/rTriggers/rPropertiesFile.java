@@ -84,7 +84,7 @@ public class rPropertiesFile {
 	        		String PropertySide = split[0];
 	        		String Value = rParser.combineSplit(1, split, "=");
 	        		for (String Property : PropertySide.split(",")) {
-	        			if (Property.startsWith("<<")) Property = Property.toLowerCase();
+	        			if (Property.startsWith("<<") && !Property.startsWith("<<list")) Property = Property.toLowerCase();
 		        		if (Properties.containsKey(Property)){
 		        			Properties.get(Property).add(Value);
 		        		}
