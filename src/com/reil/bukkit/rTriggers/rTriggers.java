@@ -16,7 +16,7 @@ import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
 import org.bukkit.command.*;
 
-import org.bukkit.croemmich.serverevents.*;
+import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
 import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
@@ -52,52 +52,55 @@ public class rTriggers extends JavaPlugin {
 	public void registerEvents(String[] messages){
 		if (registered) return;
 		else registered = true;
-		PluginManager loader = MCServer.getPluginManager();
-		boolean [] flag = new boolean[7];
+		
+		boolean [] flag = new boolean[6];
 		Arrays.fill(flag, false);
+		PluginManager manager = MCServer.getPluginManager();
+		
 		for(String message : messages){
 			String [] split = message.split(":");
-			if(split.length >= 2){
-				String options = split[1];
-				if(!flag[0] && (options.contains("onlogin") || options.isEmpty())){
-					loader.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-					flag[0] = true;
-				}
-				if(!flag[1] && options.contains("ondisconnect")){
-					loader.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
-					flag[1] = true;
-				}
-				if(!flag[2] && options.contains("oncommand")){
-					loader.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
-					flag[2] = true;
-				}
-				if(!flag[3] && options.contains("onkick")){
-					loader.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
-					flag[3] = true;
-				}
-				if(!flag[4] && options.contains("ondeath")){
-					loader.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
-					loader.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
-					flag[4] = true;
-				}
-				if(!flag[5] && options.contains("onconsole")){
-					loader.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
-					flag[5] = true;
-				}
-				if(!flag[6] && options.contains("onload")){
-					for (String option: options.split(",")){
-						if (option.startsWith("onload|")) {
-							String pluginName = option.substring("onload|".length());
-							serverListener.listenFor(pluginName);
-						}
+			if (!(split.length >= 2)) continue;
+			
+			String options = split[1];
+			if(!flag[0] && (options.isEmpty() || options.contains("onlogin"))){
+				manager.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
+				flag[0] = true;
+			}
+			if(!flag[1] && options.contains("ondisconnect")){
+				manager.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
+				flag[1] = true;
+			}
+			if(!flag[2] && options.contains("oncommand")){
+				manager.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
+				flag[2] = true;
+			}
+			if(!flag[3] && options.contains("onkick")){
+				manager.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
+				flag[3] = true;
+			}
+			if(!flag[4] && options.contains("ondeath")){
+				manager.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
+				manager.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
+				flag[4] = true;
+			}
+			if(!flag[5] && options.contains("onconsole")){
+				manager.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
+				flag[5] = true;
+			}
+			if(options.contains("onload")){
+				for (String option: options.split(",")){
+					if (option.startsWith("onload|")) {
+						String pluginName = option.substring("onload|".length());
+						serverListener.listenFor(pluginName);
 					}
 				}
 			}
 		}
 		
-		loader.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
-		loader.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
+		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
+		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
 	} 
+	
 	public void onEnable(){
 		log = Logger.getLogger("Minecraft");
 		RNG = new Random();
@@ -125,18 +128,19 @@ public class rTriggers extends JavaPlugin {
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
 	public void grabPlugins() {
-		if (PermissionsPlugin == null && MCServer.getPluginManager().getPlugin("Permissions") != null){
+		PluginManager manager = MCServer.getPluginManager();
+		if (PermissionsPlugin == null && manager.getPlugin("Permissions") != null){
         	PermissionsPlugin = Permissions.Security;
         	log.info("[rTriggers] Attached to Permissions.");
         }
         
-        Plugin iConomyTry = MCServer.getPluginManager().getPlugin("iConomy");
+        Plugin iConomyTry = manager.getPlugin("iConomy");
         if (iConomyPlugin == null && iConomyTry != null){
         	iConomyPlugin = (iConomy) iConomyTry;
         	log.info("[rTriggers] Attached to iConomy.");
         }
         
-        Plugin CraftIRCTry = this.getServer().getPluginManager().getPlugin("CraftIRC");
+        Plugin CraftIRCTry = manager.getPlugin("CraftIRC");
         if (CraftIRCPlugin == null && CraftIRCTry != null){
         	CraftIRCPlugin = (CraftIRC) CraftIRCTry;
         	log.info("[rTriggers] Attached to CraftIRC.");
@@ -169,7 +173,6 @@ public class rTriggers extends JavaPlugin {
 	public void onDisable(){
 		Messages.save();
 		MCServer.getScheduler().cancelTasks(this);
-		PluginManager loader = MCServer.getPluginManager();
 		log.info("[rTriggers] Disabled!");
 	} 
 	
@@ -177,32 +180,20 @@ public class rTriggers extends JavaPlugin {
 	/* Looks through all of the messages,
 	 * Sends the messages triggered by groups which 'triggerMessage' is a member of,
 	 * But only if that message has the contents of 'option' as one of its options */
-	public boolean triggerMessages(String option){
-		return triggerMessages(null, option);
-	}
-	public boolean triggerMessages(Player triggerMessage, String option){
-		String[] eventToReplace = new String[0];
-		String[] eventReplaceWith = new String[0];
-		return triggerMessages(triggerMessage, option, eventToReplace, eventReplaceWith);
-	}
-	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){
-		return triggerMessages(null, option, eventToReplace, eventReplaceWith);
-	}
+	public boolean triggerMessages(String option){ return triggerMessages(null, option); }
+	public boolean triggerMessages(Player triggerMessage, String option){ return triggerMessages(triggerMessage, option, new String[0], new String[0]);	}
+	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
 	
 	public boolean triggerMessages(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
 		boolean triggeredMessage = false;
 		if (triggerMessage != null){
-			/* Everyone triggers their own name */
+			/* Everyone has at least these two. */
 			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
-			/* Everyone triggers, well, <<everyone>> */
 			groupArray.add("<<everyone>>");
 			/* Add any groups the user's a member of. */
 			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerMessage.getWorld().getName(),triggerMessage.getName())));
-		} else {
-			// If there's no player, then we have a custom trigger field
-			groupArray.add("<<customtrigger>>");
-		}
+		} else groupArray.add("<<customtrigger>>");
 		
 		/* Check for messages triggered by each group the player is a member of. */
 		for (String groupName : groupArray){
@@ -265,23 +256,20 @@ public class rTriggers extends JavaPlugin {
 		String listMember;
 		
 		// Replace user-generated lists:
-		while ( (optionStart = message.indexOf("<<list|")) != -1){
-			optionStart += "<<list|".length();
-			optionEnd = message.indexOf(">>", optionStart);
+		while ( (optionStart = message.indexOf("<<list|") + 7)     !=  6 &&
+				(optionEnd   = message.indexOf(">>", optionStart)) != -1){
 			String options = message.substring(optionStart, optionEnd);
 			String [] optionSplit = options.split("\\|");
-			// Call up the list
 			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
+			
 			if (messageList.length > 0){
-				if (optionSplit.length > 1 && optionSplit[1].equalsIgnoreCase("rand")){
-						listMember = messageList[RNG.nextInt(messageList.length)];
-				} else {
+				if (!(optionSplit.length > 1) || !optionSplit[1].equalsIgnoreCase("rand")){
 					if(!listTracker.containsKey(optionSplit[0]))
 						listTracker.put(optionSplit[0], 0);
 					int listNumber = listTracker.get(optionSplit[0]);
 					listMember = messageList[listNumber];
 					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
-				}
+				} else listMember = messageList[RNG.nextInt(messageList.length)];
 			} else listMember = "";
 			message = message.replace("<<list|" + options + ">>", listMember);
 		}
@@ -317,18 +305,18 @@ public class rTriggers extends JavaPlugin {
 			balance = iConomy.getAccount(player.getName()).getHoldings().balance();
 		
 		// Get ip and locale tags
-		InetSocketAddress triggerIP = player.getAddress();
-		String triggerCountry;
-		String triggerLocale;
+		InetSocketAddress IP = player.getAddress();
+		String country;
+		String locale;
 		try {
-			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(triggerIP.getAddress());
-			triggerCountry = playersHere.getDisplayCountry();
-			triggerLocale = playersHere.getDisplayName();
+			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(IP.getAddress());
+			country = playersHere.getDisplayCountry();
+			locale = playersHere.getDisplayName();
 		} catch (Exception e){
-			triggerCountry = ""; 
-			triggerLocale = "";
+			country = ""; 
+			locale = "";
 		}
-		String [] returnArray = { player.getName(), triggerIP.toString(), triggerLocale, triggerCountry, Double.toString(balance)};
+		String [] returnArray = { player.getName(), IP.toString(), locale, country, Double.toString(balance)};
 		return returnArray; 
 	}
 
@@ -371,19 +359,20 @@ public class rTriggers extends JavaPlugin {
 				for(String command : message.split("\n")) MCServer.dispatchCommand(Console, command.replaceAll("§.", ""));
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
 				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
-			else if (group.equalsIgnoreCase("<<server>>")) {
+			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
 				String [] with    = {"server", "", "", "", ""};
-				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
-				for(String send : serverMessage.split("\n"))
-					log.info(send);
+				log.info("[rTriggers] " + rParser.parseMessage(message, replace, with));
+			}
+			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
+				int distance = new Integer(group.substring(16, group.length() - 2));
+				for (Entity addMe : triggerer.getNearbyEntities(distance, distance, 127))
+					if (addMe instanceof Player) sendToUs.add((Player) addMe);
 			}
 			else if (group.equalsIgnoreCase("<<twitter>>")){
 				String [] with    = {"Twitter", "", "", "",""};
-				String twitterMessage = rParser.parseMessage(message, replace, with);
-				Plugin ServerEvents = MCServer.getPluginManager().getPlugin("ServerEvents");
-				if (ServerEvents != null){
+				if (ServerEventsPlugin != null){
 					try {
-						org.bukkit.croemmich.serverevents.ServerEvents.displayMessage(twitterMessage);
+						ServerEvents.displayMessage(rParser.parseMessage(message, replace, with));
 					} catch (ClassCastException ex){
 						log.info("[rTriggers] ServerEvents not found!");
 					}
@@ -391,8 +380,7 @@ public class rTriggers extends JavaPlugin {
 			} else if (group.toLowerCase().startsWith("<<player|")){
 				String playerName = group.substring(9, group.length()-2);
 				Player putMe = MCServer.getPlayer(playerName);
-				if (putMe != null)
-					sendToUs.add(putMe);
+				if (putMe != null) sendToUs.add(putMe);
 			} else if (group.equalsIgnoreCase("<<execute>>")){
 				Runtime rt = Runtime.getRuntime();
 				log.info("[rTriggers] Executing:" + message);
@@ -438,5 +426,34 @@ public class rTriggers extends JavaPlugin {
 			for(String sendMe  : message.split("\n"))   recipient.sendMessage(sendMe);
 		if(flagCommand)
 			for(String command : message.split("\n")) recipient.performCommand(command.replaceAll("§.", ""));
+	}
+	
+	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){
+		switch (causeOfDeath) {
+		case CONTACT:
+			return "touching something";
+		case ENTITY_ATTACK:
+			return "being hit";
+		case SUFFOCATION:
+			return "suffocation";
+		case FALL:
+			return "falling";
+		case FIRE:
+			return "fire";
+		case FIRE_TICK:
+			return "burning";
+		case LAVA:
+			return "lava";
+		case DROWNING:
+			return "drowning";
+		case BLOCK_EXPLOSION:
+			return "explosion";
+		case ENTITY_EXPLOSION:
+			return "creeper";
+		case CUSTOM:
+			return "the unknown";
+		default:
+			return "something";
+		}
 	}
 }
