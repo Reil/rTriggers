@@ -177,16 +177,19 @@ public class rTriggers extends JavaPlugin {
 	/* Looks through all of the messages,
 	 * Sends the messages triggered by groups which 'triggerMessage' is a member of,
 	 * But only if that message has the contents of 'option' as one of its options */
-	public boolean triggerMessagesWithOption(Player triggerMessage, String option){
+	public boolean triggerMessages(String option){
+		return triggerMessages(null, option);
+	}
+	public boolean triggerMessages(Player triggerMessage, String option){
 		String[] eventToReplace = new String[0];
 		String[] eventReplaceWith = new String[0];
-		return triggerMessagesWithOption(triggerMessage, option, eventToReplace, eventReplaceWith);
+		return triggerMessages(triggerMessage, option, eventToReplace, eventReplaceWith);
 	}
-	public boolean triggerMessagesWithOption(String option, String[] eventToReplace, String []eventReplaceWith){
-		return triggerMessagesWithOption(null, option, eventToReplace, eventReplaceWith);
+	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){
+		return triggerMessages(null, option, eventToReplace, eventReplaceWith);
 	}
 	
-	public boolean triggerMessagesWithOption(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
+	public boolean triggerMessages(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
 		ArrayList<String>groupArray = new ArrayList<String>();
 		boolean triggeredMessage = false;
 		if (triggerMessage != null){

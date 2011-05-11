@@ -13,7 +13,7 @@ public class rTriggersServerListener extends ServerListener {
 	}
 	@Override
 	public void onServerCommand(ServerCommandEvent event){
-		this.rTriggers.triggerMessagesWithOption(null, "onconsole");
+		this.rTriggers.triggerMessages("onconsole");
 	}
 	public void listenFor(String pluginName) {
 		plugins.add(pluginName);
@@ -23,7 +23,7 @@ public class rTriggersServerListener extends ServerListener {
 		PluginManager PM = rTriggers.MCServer.getPluginManager();
 		for(String checkMe:plugins){
 			if(PM.getPlugin(checkMe) != null){
-				rTriggers.triggerMessagesWithOption(null, "onload|" + checkMe);
+				rTriggers.triggerMessages("onload|" + checkMe);
 			}
 		}
 	}	
@@ -33,9 +33,7 @@ public class rTriggersServerListener extends ServerListener {
         rTriggers.grabPlugins();
         
         String pluginName = event.getPlugin().getDescription().getName();
-        if(plugins.contains(pluginName)) {
-        	rTriggers.triggerMessagesWithOption(null, "onload|" + pluginName);
-        }
+        if(plugins.contains(pluginName)) rTriggers.triggerMessages("onload|" + pluginName);
     }
 	
 	@Override

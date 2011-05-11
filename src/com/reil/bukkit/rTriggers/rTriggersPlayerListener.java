@@ -6,9 +6,6 @@ import org.bukkit.event.player.*;
 
 
 public class rTriggersPlayerListener extends PlayerListener {
-	/**
-	 * 
-	 */
 	private final rTriggers rTriggers;
 
 	/**
@@ -21,8 +18,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 	@Override
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin");
-		if (this.rTriggers.triggerMessagesWithOption(triggerMessage, "onlogin|override")){
+		this.rTriggers.triggerMessages(triggerMessage, "onlogin");
+		if (this.rTriggers.triggerMessages(triggerMessage, "onlogin|override")){
 			event.setJoinMessage("");
 		}
 		return;
@@ -31,8 +28,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 	@Override
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect");
-		if (this.rTriggers.triggerMessagesWithOption(triggerMessage, "ondisconnect|override")){
+		this.rTriggers.triggerMessages(triggerMessage, "ondisconnect");
+		if (this.rTriggers.triggerMessages(triggerMessage, "ondisconnect|override")){
 			event.setQuitMessage("");
 		}
 		this.rTriggers.deathCause.remove(triggerMessage.getEntityId());
@@ -45,7 +42,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		Player triggerMessage = event.getPlayer();
 		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
 		String [] withThese =    {event.getReason() , triggerMessage.getName()};
-		this.rTriggers.triggerMessagesWithOption(triggerMessage, "onkick", replaceThese, withThese);
+		this.rTriggers.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
 	@Override
@@ -61,34 +58,18 @@ public class rTriggersPlayerListener extends PlayerListener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
-		this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
+		this.rTriggers.triggerMessages(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
 		
 		
         if (split[0].equalsIgnoreCase("/rTriggers")) {
-			this.rTriggers.triggerMessagesWithOption(player, "onrTriggers", replaceTheseArray, withTheseArray);
+			this.rTriggers.triggerMessages(player, "onrTriggers", replaceTheseArray, withTheseArray);
 			event.setCancelled(true);
 		}
         
-        if (this.rTriggers.triggerMessagesWithOption(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
+        if (this.rTriggers.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
         	event.setCancelled(true);
         }
 		
 		return; 
 	}
-	/*
-	public boolean onConsoleCommand(String[] split) {
-		if (split[0].equalsIgnoreCase("grouptell")) {
-			Group iShouldExist;
-        	if ((iShouldExist = etc.getDataSource().getGroup(split[1])) != null) {
-	        	String tag =  "<§dServer " + Colors.White + "to §" + iShouldExist.Prefix.charAt(0) + iShouldExist.Name + Colors.White + "> ";
-	        	String message = tag + etc.combineSplit(2, split, " ");
-	        	this.rTriggers.sendToGroup(split[1], message);
-	        	this.rTriggers.log.info("[rTriggers to " + iShouldExist.Name + "] " + etc.combineSplit(2, split, " "));
-        	} else {
-        		this.rTriggers.log.info("[rTriggers] Invalid group name!");
-        	}
-        	return true;
-		}
-		return false;
-	}*/
 }

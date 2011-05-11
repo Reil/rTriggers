@@ -83,25 +83,25 @@ public class rTriggersEntityListener extends EntityListener{
 			String [] replaceThese = {"<<death-cause>>", "<<killer>>"};
 			if (this.rTriggers.deathBringer.get(deadGuyId) instanceof Player) {
 				String [] withThese = {deathBy, ((Player) this.rTriggers.deathBringer.get(deadGuyId)).getDisplayName() };
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath", replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|playerkill", replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|entity", replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|entity", replaceThese, withThese);
 			} else{
 				String killer = this.rTriggers.deathBringer.get(deadGuyId).getClass().getName();
 				killer = killer.substring(killer.lastIndexOf("Craft") + "Craft".length());
 				String [] withThese = {deathBy, killer};
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath", replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + killer, replaceThese, withThese);
-				rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|entity", replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|" + killer, replaceThese, withThese);
+				rTriggers.triggerMessages(deadGuy, "ondeath|entity", replaceThese, withThese);
 			}
 		} 
 		else{
 			String [] replaceThese = {"<<death-cause>>"};
 			String [] withThese = {deathBy};
-			rTriggers.triggerMessagesWithOption(deadGuy, "ondeath", replaceThese, withThese);
-			rTriggers.triggerMessagesWithOption(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			rTriggers.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			rTriggers.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
 		}
 	}
 }
