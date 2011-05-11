@@ -1,41 +1,22 @@
 package com.reil.bukkit.rTriggers;
-import java.io.File;
-import java.io.IOException;
 
+import java.io.*;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Random;
-import java.util.Set;
-import java.util.Timer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.*;
+import java.util.logging.*;
 
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.entity.EntityListener;
-import org.bukkit.event.player.PlayerChatEvent;
-import org.bukkit.event.player.PlayerListener;
-import org.bukkit.event.server.PluginEnableEvent;
-import org.bukkit.event.server.PluginEvent;
-import org.bukkit.event.server.ServerListener;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLoader;
-import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.event.Event.*;
+import org.bukkit.event.entity.*;
+import org.bukkit.event.player.*;
+import org.bukkit.event.server.*;
+import org.bukkit.plugin.*;
+import org.bukkit.plugin.java.*;
+import org.bukkit.command.*;
 
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.croemmich.serverevents.*;
-
 import com.ensifera.animosity.craftirc.CraftIRC;
 import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
@@ -44,21 +25,21 @@ import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
+	private ConsoleCommandSender Console;
+	private boolean registered = false;
 	public rPropertiesFile Messages;
-	Random RNG = new Random();
-	Plugin ServerEvents;
+	public Server MCServer;
+	public Random RNG;
+	public Logger log;
+	
+	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
-	rTriggersServerListener serverListener = new rTriggersServerListener(this);
-	Logger log = Logger.getLogger("Minecraft");
-	Server MCServer;
-	ConsoleCommandSender Console;
-	private Timer scheduler;
-	boolean registered = false;
 	
 	public iConomy iConomyPlugin;
-	public CraftIRC craftIRCHandle;
+	public CraftIRC CraftIRCPlugin;
 	public PermissionHandler PermissionsPlugin;
+	public Plugin ServerEventsPlugin;
     
     HashMap <String, Integer> listTracker = new HashMap<String,Integer>();
 	HashMap <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
@@ -70,6 +51,7 @@ public class rTriggers extends JavaPlugin {
      */
 	public void registerEvents(String[] messages){
 		if (registered) return;
+		else registered = true;
 		PluginManager loader = MCServer.getPluginManager();
 		boolean [] flag = new boolean[7];
 		Arrays.fill(flag, false);
@@ -115,9 +97,10 @@ public class rTriggers extends JavaPlugin {
 		
 		loader.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		loader.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
-		registered = true;
 	} 
 	public void onEnable(){
+		log = Logger.getLogger("Minecraft");
+		RNG = new Random();
 		MCServer = getServer();
 		Console = new ConsoleCommandSender(MCServer);
 		getDataFolder().mkdir();
@@ -142,20 +125,20 @@ public class rTriggers extends JavaPlugin {
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
 	public void grabPlugins() {
-		if (MCServer.getPluginManager().getPlugin("Permissions") != null){
+		if (PermissionsPlugin == null && MCServer.getPluginManager().getPlugin("Permissions") != null){
         	PermissionsPlugin = Permissions.Security;
         	log.info("[rTriggers] Attached to Permissions.");
         }
         
         Plugin iConomyTry = MCServer.getPluginManager().getPlugin("iConomy");
-        if (iConomyTry != null){
+        if (iConomyPlugin == null && iConomyTry != null){
         	iConomyPlugin = (iConomy) iConomyTry;
         	log.info("[rTriggers] Attached to iConomy.");
         }
         
         Plugin CraftIRCTry = this.getServer().getPluginManager().getPlugin("CraftIRC");
-        if (CraftIRCTry != null){
-        	craftIRCHandle = (CraftIRC) CraftIRCTry;
+        if (CraftIRCPlugin == null && CraftIRCTry != null){
+        	CraftIRCPlugin = (CraftIRC) CraftIRCTry;
         	log.info("[rTriggers] Attached to CraftIRC.");
         }
 	}
@@ -165,50 +148,26 @@ public class rTriggers extends JavaPlugin {
 	 * Postcondition: New threads for each timer have been created.  
 	 */
 	public void generateTimers(){
-		
 		for(String key : Messages.getKeys()){
-			if (key.startsWith("<<timer|")){
-				for(String message : Messages.getStrings(key)){
-					MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
-							new rTriggersTimer(this, message),
-							0,
-							20 * new Long(key.substring(8, key.length()-2)));
+			try {
+				if (key.startsWith("<<timer|")){
+					for(String message : Messages.getStrings(key)){
+						MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
+								new rTriggersTimer(this, message),
+								0,
+								20 * new Long(key.substring(8, key.length()-2)));
+					}
 				}
+			} catch (NumberFormatException e){
+				log.log(Level.WARNING, "[rTriggers] Invalid number string:" + key);
 			}
 		}
-		
-		/**
-		 * Ooold Timers generated here!
-		 */
-		if (Messages.keyExists("<<timer>>")){
-			log.info("[rTriggers] Warning! You are using the old timer syntax!  Update to the new one, using <<timer|timegoeshere>>, with no options!");
-			HashMap<String, ArrayList<String>> timerLists = new HashMap <String, ArrayList<String>>();
-			scheduler = new Timer();
-			// Sort all the timer messages into lists 
-			for (String sortMe : Messages.getStrings("<<timer>>")){
-				String [] split =  sortMe.split(":");
-				String [] options =  split[1].split(",");
-				String sortMeList = options[0];
-				if(!timerLists.containsKey(sortMeList)){
-					timerLists.put(sortMeList, new ArrayList<String>());
-				}
-				timerLists.get(sortMeList).add(sortMe);
-			}
-			// Make an rTriggersTimer for each list!
-			for (String key : timerLists.keySet().toArray(new String[timerLists.keySet().size()])){
-				// rTriggersTimer(rTriggers rTriggers, Timer timer, String [] Messages)
-				ArrayList<String> sendTheseAList = timerLists.get(key);
-				String [] sendThese = sendTheseAList.toArray(new String[sendTheseAList.size()]);
-				rTriggersTimerOld scheduleMe = new rTriggersTimerOld(this, scheduler, sendThese); 
-				scheduler.schedule(scheduleMe, scheduleMe.delay);
-			}
-		}
+		if (Messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
 	}
 	
 	@Override
 	public void onDisable(){
 		Messages.save();
-		if (scheduler != null) scheduler.cancel();
 		MCServer.getScheduler().cancelTasks(this);
 		PluginManager loader = MCServer.getPluginManager();
 		log.info("[rTriggers] Disabled!");
@@ -244,52 +203,51 @@ public class rTriggers extends JavaPlugin {
 		
 		/* Check for messages triggered by each group the player is a member of. */
 		for (String groupName : groupArray){
-			if (Messages.keyExists(groupName)){
-				// Check all the messages for this group 
-				for (String sendToGroups_Message : Messages.getStrings(groupName)){
-					String [] split =  sendToGroups_Message.split(":");
-					String [] options =  split[1].split(",");
-					boolean hookValid = false;
-					
-					// See if any of the options of this message match the one we called the funciton with
-					if (split[1].isEmpty() && option.equalsIgnoreCase("onlogin")){
-						// Default case:
-						// No options in the message, and we're triggering an onlogin case.
-						hookValid = true;
-					} else for (int i = 0; i < options.length && hookValid == false; i++){
-						// Otherwise, just check each option, see if it matches the parameter
-						hookValid = options[i].equalsIgnoreCase(option);
-					}
-					
-					// If it does match an option, we sort it out and send it
-					if (hookValid) {
-						
-						/**************************
-						 * Tag replacement start!
-						 *************************/
-						
-						String message = rParser.combineSplit(2, split, ":");
-						
-						message = replaceLists(message);
-						
-						String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-						String [] with    = {"\n§f"      , "§"         , "§"        ,""};
-						message = rParser.replaceWords(message, replace, with);
-						
-						String [] with2    = getTagReplacements(triggerMessage);
-						String [] replace2 = { "<<triggerer>>"          , "<<triggerer-ip>>"    , "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
-						message = rParser.replaceWords(message, replace2, with2);
-						
-						
-						if (eventToReplace.length > 0)
-							message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-						/**************************
-						 *  Tag replacement end! */
-						
-						sendMessage(message, triggerMessage, split[0]);
-						triggeredMessage = true;
-					}
+			if (!Messages.keyExists(groupName)) continue;
+			if (groupName.startsWith("<<") && groupName.startsWith("<<list|")) groupName = groupName.toLowerCase();
+			// Check all the messages for this group 
+			for (String sendToGroups_Message : Messages.getStrings(groupName)){
+				boolean hookValid = false;
+				String [] split =  sendToGroups_Message.split(":");
+				String [] options =  split[1].split(",");
+				
+				// See if any of the options of this message match the one we called the funciton with
+				if (split[1].isEmpty() && option.equalsIgnoreCase("onlogin")){
+					// Default case: No options is equivalent to onlogin
+					hookValid = true;
+				} else for (int i = 0; i < options.length && hookValid == false; i++){
+					// Otherwise, just check each option, see if it matches the parameter
+					hookValid = options[i].equalsIgnoreCase(option);
 				}
+				
+				if (!hookValid) continue;
+				
+				// If the message matched our option, we sort it out and send it	
+				/**************************
+				 * Tag replacement start!
+				 *************************/
+				
+				String message = rParser.combineSplit(2, split, ":");
+				
+				message = replaceLists(message);
+				
+				// Regex's which catch @, but not \@ and &, but not \&
+				String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
+				String [] with    = {"\n§f"      , "§"         , "§"        ,""};
+				message = rParser.replaceWords(message, replace, with);
+				
+				String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+				String [] with2    = getTagReplacements(triggerMessage);
+				message = rParser.replaceWords(message, replace2, with2);
+				
+				
+				if (eventToReplace.length > 0)
+					message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
+				/**************************
+				 *  Tag replacement end! */
+				
+				sendMessage(message, triggerMessage, split[0]);
+				triggeredMessage = true;
 			}
 		}
 		return triggeredMessage;
@@ -327,21 +285,14 @@ public class rTriggers extends JavaPlugin {
 		
 		// Now replace any use of <<player-list>>
 		if(message.contains("<<player-list>>")){
-			String playerList;
-			Player [] players = MCServer.getOnlinePlayers();
-			if (players.length == 1)
-				playerList = players[0].getDisplayName();
-			else {
-				StringBuilder list = new StringBuilder();
-				String prefix = "";
-				for (Player getName : players){
-					list.append(prefix);
-					prefix = ", ";
-					list.append(getName.getDisplayName());
-				}
-				playerList = list.toString();
+			StringBuilder list = new StringBuilder();
+			String prefix = "";
+			
+			for (Player getName : MCServer.getOnlinePlayers()){
+				list.append(prefix + getName.getDisplayName());
+				prefix = ", ";
 			}
-			message = message.replaceAll("<<player-list>>", playerList);
+			message = message.replaceAll("<<player-list>>", list.toString());
 		}
 		
 		return message;
@@ -349,19 +300,20 @@ public class rTriggers extends JavaPlugin {
 	/**
 	 * Use in conjunction with rParser.replaceWords or rParser.parseMessage;
 	 * @param player A player to get the replacements for
-	 * @return Array of things to replace tags in this order: Name, IP address, locale, country, iConomy balance
+	 * @return Array of things to replace tags in this order:
+	 *         Name, IP address, locale, country, iConomy balance
 	 */
 	public String[] getTagReplacements(Player player){
 		if (player == null){
 			String [] returnArray = {"", "", "", "", ""};
 			return returnArray;
 		}
-		// Get <<triggerer-balance>> tag
+		// Get balance tag
 		double balance = 0;
 		if (iConomyPlugin != null && iConomy.hasAccount(player.getName()))
-				balance = iConomy.getAccount(player.getName()).getHoldings().balance();
+			balance = iConomy.getAccount(player.getName()).getHoldings().balance();
 		
-		// Get <<triggerer-ip>> and <<triggerer-locale>> tags
+		// Get ip and locale tags
 		InetSocketAddress triggerIP = player.getAddress();
 		String triggerCountry;
 		String triggerLocale;
@@ -404,19 +356,18 @@ public class rTriggers extends JavaPlugin {
 		 * 1) Constructing list of groups to send to
 		 * 2) Processing 'special' groups (ones in double-chevrons) */
 		for (String group : sendToGroups){
-			/*************************
-			 * Special cases start! */
-			if (group.equalsIgnoreCase("<<triggerer>>") && triggerer != null) sendToUs.add(triggerer);
-			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
-			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
+			if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
+			/* Special cases: start! */
+			else if (group.equalsIgnoreCase("<<everyone>>"))          for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
+			else if (group.equalsIgnoreCase("<<triggerer>>"))         sendToUs.add(triggerer);
 			else if (group.equalsIgnoreCase("<<command-triggerer>>")) sendToPlayer(message, triggerer, true, false);
 			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
+			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
+			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
 			else if (group.equalsIgnoreCase("<<command-console>>"))
-				for(String command : message.split("\n§f")) MCServer.dispatchCommand(Console, command);
-			else if (group.toLowerCase().startsWith("<<craftirc|") && craftIRCHandle != null)
-				craftIRCHandle.sendMessageToTag(message, group.substring(11, group.length()-2));
-			else if (group.equalsIgnoreCase("<<everyone>>"))
-				for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
+				for(String command : message.split("\n")) MCServer.dispatchCommand(Console, command.replaceAll("§.", ""));
+			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
+				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<server>>")) {
 				String [] with    = {"server", "", "", "", ""};
 				String serverMessage = "[rTriggers] " + rParser.parseMessage(message, replace, with);
@@ -446,9 +397,6 @@ public class rTriggers extends JavaPlugin {
 					Process pr = rt.exec(message);
 				} catch (IOException e) { e.printStackTrace(); }
 			}
-			/**********************
-			 * Special cases end!*/
-			else sendToGroupsFiltered.add(group);
 		}
 		/****************************************************
 		 * List of non-special case groups has been constructed.
@@ -466,12 +414,11 @@ public class rTriggers extends JavaPlugin {
 	public Set<Player> constructPlayerList(String [] groups, HashSet<Player> list){
 		if (PermissionsPlugin == null) return list;
 		for (Player addMe: MCServer.getOnlinePlayers()){
-			if (!list.contains(addMe)){
-				for(String oneOfUs : groups){
-					if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
-						list.add(addMe);
-						break;
-					}
+			if (list.contains(addMe)) continue;
+			for(String oneOfUs : groups){
+				if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
+					list.add(addMe);
+					break;
 				}
 			}
 		}

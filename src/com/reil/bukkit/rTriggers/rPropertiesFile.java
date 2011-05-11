@@ -1,17 +1,7 @@
 package com.reil.bukkit.rTriggers;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.logging.Logger;
+import java.io.*;
+import java.util.*;
+import java.util.logging.*;
 
 import com.reil.bukkit.rParser.rParser;
 
@@ -55,10 +45,9 @@ public class rPropertiesFile {
 		 * If the line has an assignment, put the name here. */
 		Properties.clear();
 		ArrayList<String> messages = new ArrayList<String>();
-		BufferedReader reader;
-	    reader = new BufferedReader(new FileReader(fileName));
-
+		BufferedReader reader = new BufferedReader(new FileReader(fileName));
 	    String tempLine;
+	    
 	    //Cycle through complete contents of the file.	 
 	    while ((tempLine = reader.readLine()) != null) {
 	    	/*****************
@@ -74,29 +63,27 @@ public class rPropertiesFile {
     		String line = concatMe.toString();
     		// Line is now built, read it in as usual.
     		
-	    	if (line.startsWith("#")|| line.isEmpty() || line.startsWith("\n") || line.startsWith("\r")) {
-	    		
-	    	}
-	    	else {
-	    		/* TODO: Error checking */
-	    		String [] split = line.split("=");
-	    		if (split.length >= 2){
-	        		String PropertySide = split[0];
-	        		String Value = rParser.combineSplit(1, split, "=");
-	        		for (String Property : PropertySide.split(",")) {
-	        			if (Property.startsWith("<<") && !Property.startsWith("<<list")) Property = Property.toLowerCase();
-		        		if (Properties.containsKey(Property)){
-		        			Properties.get(Property).add(Value);
-		        		}
-		        		else {
-		        			ArrayList<String> newList = new ArrayList<String>();
-		        			newList.add(Value);
-		        			Properties.put(Property, newList);
-		        		}
-	        		}
-	        		messages.add(Value);
-	    		}
-	    	}
+	    	if (line.startsWith("#")|| line.isEmpty() || line.startsWith("\n") || line.startsWith("\r"))
+	    		continue;
+	    	
+    		String [] split = line.split("=");
+    		if (!(split.length >= 2)) continue;
+    		
+    		String propertyKeys = split[0];
+    		String propertyValue = rParser.combineSplit(1, split, "=");
+    		
+    		for (String key : propertyKeys.split(",")) {
+    			if (key.startsWith("<<") && !key.startsWith("<<list")) key = key.toLowerCase();
+        		
+    			if (Properties.containsKey(key))
+        			Properties.get(key).add(propertyValue);
+        		else {
+        			ArrayList<String> newList = new ArrayList<String>();
+        			newList.add(propertyValue);
+        			Properties.put(key, newList);
+        		}
+    		}
+    		messages.add(propertyValue);
 	    }
     
 	    reader.close();
