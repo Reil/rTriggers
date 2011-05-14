@@ -42,7 +42,9 @@ public class rTriggers extends JavaPlugin {
 	public Server MCServer;
 	public Random RNG;
 	public Logger log;
+	
 	String commaSplit = "[ \t]*,[ \t]*";
+	String colonSplit = "[ \t]*:[ \t]*";
 	
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
@@ -54,6 +56,7 @@ public class rTriggers extends JavaPlugin {
 	public PermissionHandler PermissionsPlugin;
 	public Plugin ServerEventsPlugin;
     
+	Map <String, Long> limitTracker = new HashMap<String, Long>();
     Map <String, Integer> listTracker = new HashMap<String,Integer>();
 	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
 	Map <Integer, Entity> deathBringer = new HashMap <Integer, Entity>();
@@ -73,7 +76,7 @@ public class rTriggers extends JavaPlugin {
 		PluginManager manager = MCServer.getPluginManager();
 		
 		for(String message : messages){
-			String [] split = message.split("[ \t]*:[ \t]*", 3);
+			String [] split = message.split(colonSplit, 3);
 			if (!(split.length >= 2)) continue;
 			
 			String options = split[1];
@@ -115,7 +118,8 @@ public class rTriggers extends JavaPlugin {
 			for(String option : options.split(commaSplit)){
 				if(option.startsWith("limit|")){
 					option = "limit";
-					
+				} else if (option.startsWith("delay|")) {
+					option = "delay";
 				}
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
 				optionsMap.get(option).add(message);
@@ -182,10 +186,10 @@ public class rTriggers extends JavaPlugin {
 			try {
 				if (key.startsWith("<<timer|")){
 					for(String message : messages.getStrings(key)){
+						long waitTime = 20 * new Long(key.substring(8, key.length()-2));
 						MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
 								new rTriggersTimer(this, message),
-								0,
-								20 * new Long(key.substring(8, key.length()-2)));
+								waitTime, waitTime);
 					}
 				}
 			} catch (NumberFormatException e){
@@ -238,14 +242,15 @@ public class rTriggers extends JavaPlugin {
 		sendThese.retainAll(optionsMap.get(option));
 		
 		/* Send all message candidates */
-		for (String untrimmedMessage : sendThese){	
+		message_rollout:
+		for (String fullMessage : sendThese){	
+			if (tooSoon(fullMessage)) continue; // Don't send messages if they have the limit option and it's been too soon.
+			
+			String [] split =  fullMessage.split(colonSplit, 3);
+			String message = split[2];
 			/**************************
 			 * Tag replacement start!
 			 *************************/
-			String [] split =  untrimmedMessage.split("[ \t]*:[ \t]*", 3);
-			
-			String message = split[2];
-			
 			message = replaceLists(message);
 			
 			// Regex's which catch @, but not \@ and &, but not \&
@@ -257,17 +262,52 @@ public class rTriggers extends JavaPlugin {
 			String [] with2    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace2, with2);
 			
-			
 			if (eventToReplace.length > 0)
 				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
 			/**************************
 			 *  Tag replacement end! */
 			
-			sendMessage(message, triggerer, split[0]);
+			// Ship out the message.  If it has a delay on it, put it on the scheduler
+			if (!optionsMap.get("delay").contains(fullMessage))
+				sendMessage(message, triggerer, split[0]);
+			else {
+				long waitTime = 0;
+				for(String checkOption : split[1].split(commaSplit)) {
+					if (checkOption.startsWith("delay|")) {
+						waitTime = 20 * new Long(checkOption.substring(6));
+						MCServer.getScheduler().scheduleAsyncDelayedTask (this,
+								new rTriggersTimer(this, split[0] + "::"+message, triggerer),
+								waitTime);
+					}
+				}
+			}
 		}
 		return !sendThese.isEmpty();
 	}
 	
+	private boolean tooSoon(String message) {
+		if (optionsMap.get("limit").contains(message)){
+			long currentTime = System.currentTimeMillis();
+			if (!limitTracker.containsKey(message)){
+				limitTracker.put(message, currentTime);
+				return false;
+			}
+			
+			long lastTime = limitTracker.get(message);
+			// Find minimum wait time
+			long delay = 0;
+			for(String checkOption : message.split(colonSplit)[1].split(commaSplit)) {
+				if (checkOption.startsWith("limit|")) {
+					delay = 1000 * new Long(checkOption.substring(6));
+					break;
+				}
+			}			
+			if (currentTime - lastTime > delay) limitTracker.put(message, currentTime);
+			else return true;
+		}
+		return false;
+	}
+
 	/*
 	 * Will replace user-generated lists, as well as the player list.
 	 */
