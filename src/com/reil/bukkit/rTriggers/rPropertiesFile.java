@@ -3,8 +3,6 @@ import java.io.*;
 import java.util.*;
 import java.util.logging.*;
 
-import com.reil.bukkit.rParser.rParser;
-
 public class rPropertiesFile {
 	HashMap<String,ArrayList<String>> Properties = new HashMap<String,ArrayList<String>>(); 
 	String fileName;
@@ -66,7 +64,7 @@ public class rPropertiesFile {
 	    	if (line.startsWith("#")|| line.isEmpty() || line.startsWith("\n") || line.startsWith("\r"))
 	    		continue;
 	    	
-    		String [] split = line.split("=", 2);
+    		String [] split = line.split("[ \t]*?=[ \t]*?", 2);
     		if (!(split.length == 2)) continue;
     		
     		String propertyKeys = split[0];

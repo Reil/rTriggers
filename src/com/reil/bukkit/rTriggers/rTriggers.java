@@ -1,5 +1,6 @@
 package com.reil.bukkit.rTriggers;
 
+import java.awt.print.Paper;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -16,6 +17,7 @@ import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
 import org.bukkit.command.*;
 
+// Plugin hooking
 import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
 import com.nijiko.permissions.PermissionHandler;
@@ -23,6 +25,13 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
+
+// Fake Player
+import net.minecraft.server.EntityPlayer;
+import net.minecraft.server.ItemInWorldManager;
+import org.bukkit.craftbukkit.CraftServer;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 
 @SuppressWarnings("unused")
 public class rTriggers extends JavaPlugin {
@@ -33,6 +42,7 @@ public class rTriggers extends JavaPlugin {
 	public Server MCServer;
 	public Random RNG;
 	public Logger log;
+	String commaSplit = "[ \t]*,[ \t]*";
 	
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
@@ -63,7 +73,7 @@ public class rTriggers extends JavaPlugin {
 		PluginManager manager = MCServer.getPluginManager();
 		
 		for(String message : messages){
-			String [] split = message.split(":", 3);
+			String [] split = message.split("[ \t]*:[ \t]*", 3);
 			if (!(split.length >= 2)) continue;
 			
 			String options = split[1];
@@ -93,7 +103,7 @@ public class rTriggers extends JavaPlugin {
 				flag[5] = true;
 			}
 			if(options.contains("onload")){
-				for (String option: options.split(",")){
+				for (String option: options.split(commaSplit)){
 					if (option.startsWith("onload|")) {
 						String pluginName = option.substring("onload|".length());
 						serverListener.listenFor(pluginName);
@@ -102,7 +112,11 @@ public class rTriggers extends JavaPlugin {
 			}
 			
 			if (options.isEmpty()) options = "onlogin";
-			for(String option : options.split(",")){
+			for(String option : options.split(commaSplit)){
+				if(option.startsWith("limit|")){
+					option = "limit";
+					
+				}
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
 				optionsMap.get(option).add(message);
 			}
@@ -133,6 +147,8 @@ public class rTriggers extends JavaPlugin {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
 		generateTimers(Messages);
+		
+		// fakePlayer = makeFakePlayer("&rTriggers");
 		
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
@@ -226,7 +242,7 @@ public class rTriggers extends JavaPlugin {
 			/**************************
 			 * Tag replacement start!
 			 *************************/
-			String [] split =  untrimmedMessage.split(":", 3);
+			String [] split =  untrimmedMessage.split("[ \t]*:[ \t]*", 3);
 			
 			String message = split[2];
 			
@@ -300,7 +316,7 @@ public class rTriggers extends JavaPlugin {
 	 *         Name, IP address, locale, country, iConomy balance
 	 */
 	public String[] getTagReplacements(Player player){
-		if (player == null){
+		if (player == null || player.getName().equals("&rTriggers")){
 			String [] returnArray = {"", "", "", "", ""};
 			return returnArray;
 		}
@@ -331,7 +347,7 @@ public class rTriggers extends JavaPlugin {
 		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>"))
 			sendToPlayer(message, triggerMessage, false, false);
 		else
-			sendToGroups(Groups.split(","), message, triggerMessage);
+			sendToGroups(Groups.split(commaSplit), message, triggerMessage);
 	}
 
 	/**
@@ -352,6 +368,7 @@ public class rTriggers extends JavaPlugin {
 		
 		Set <Player> sendToUs     = new HashSet<Player>();
 		Set <Player> dontSendToUs = new HashSet<Player>();
+		dontSendToUs.add(null);
 		
 		boolean flagCommand  = false;
 		boolean flagSay      = false;
@@ -378,6 +395,8 @@ public class rTriggers extends JavaPlugin {
 			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
 			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
 			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
+			else if (group.equalsIgnoreCase("<<player|&rTriggers>>")) sendToUs.add(makeFakePlayer("&rTriggers", triggerer));
+			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
 				for(String command : message.split("\n")) MCServer.dispatchCommand(Console, command.replaceAll("§.", ""));
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
@@ -400,10 +419,6 @@ public class rTriggers extends JavaPlugin {
 						log.info("[rTriggers] ServerEvents not found!");
 					}
 				} else  log.info("[rTriggers] ServerEvents not found!");
-			} else if (group.toLowerCase().startsWith("<<player|")){
-				String playerName = group.substring(9, group.length()-2);
-				Player putMe = MCServer.getPlayer(playerName);
-				if (putMe != null) sendToUs.add(putMe);
 			} else if (group.equalsIgnoreCase("<<execute>>")){
 				Runtime rt = Runtime.getRuntime();
 				log.info("[rTriggers] Executing:" + message);
@@ -458,8 +473,10 @@ public class rTriggers extends JavaPlugin {
 			for(String sayThis : message.split("\n")) recipient.chat(sayThis);
 		if (!flagCommand && !flagSay)
 			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
-		if(flagCommand)
+		if (flagCommand && !recipient.getName().equals("&rTriggers"))
 			for(String command : message.split("\n")) recipient.performCommand(command.replaceAll("§.", ""));
+		if (flagCommand &&  recipient.getName().equals("&rTriggers"))
+			for(String command : message.split("\n")) recipient.chat("/" + command.replaceAll("§.", ""));
 	}
 	
 	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){
@@ -489,5 +506,20 @@ public class rTriggers extends JavaPlugin {
 		default:
 			return "something";
 		}
+	}
+	
+	public Player makeFakePlayer(String Name, Player player) {
+		CraftServer cServer = (CraftServer) MCServer;
+        CraftWorld cWorld = (CraftWorld) player.getWorld();
+        EntityPlayer fakeEntityPlayer = new EntityPlayer(
+                        cServer.getHandle().server, cWorld.getHandle(),
+                        Name, new ItemInWorldManager(cWorld.getHandle()));
+        
+        fakeEntityPlayer.netServerHandler = ((CraftPlayer) player).getHandle().netServerHandler;
+        
+        Player fakePlayer = (Player) fakeEntityPlayer.getBukkitEntity();
+        fakePlayer.setDisplayName(Name);
+        
+        return fakePlayer;
 	}
 }
