@@ -33,7 +33,7 @@ public class rTriggersServerListener extends ServerListener {
         if(plugins.contains(pluginName)) rTriggers.triggerMessages("onload|" + pluginName);
         
         if (!rTriggers.economyMethods.hasMethod() && rTriggers.economyMethods.setMethod(event.getPlugin()))
-            this.rTriggers.economyPlugin = this.rTriggers.economyMethods.getMethod();
+            rTriggers.economyPlugin = rTriggers.economyMethods.getMethod();
     }
 	
 	@Override

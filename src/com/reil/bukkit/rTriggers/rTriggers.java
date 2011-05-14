@@ -54,7 +54,7 @@ public class rTriggers extends JavaPlugin {
      * Goes through each message in messages[] and registers events that it sees in each.
      * @param messages
      */
-	public void registerEvents(String[] messages){
+	public void processOptions(String[] messages){
 		if (registered) return;
 		else registered = true;
 		
@@ -63,7 +63,7 @@ public class rTriggers extends JavaPlugin {
 		PluginManager manager = MCServer.getPluginManager();
 		
 		for(String message : messages){
-			String [] split = message.split(":");
+			String [] split = message.split(":", 3);
 			if (!(split.length >= 2)) continue;
 			
 			String options = split[1];
@@ -108,6 +108,7 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		
+		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
 	} 
@@ -124,7 +125,7 @@ public class rTriggers extends JavaPlugin {
 
 		try {
 			grabPlugins(pluginManager);
-			registerEvents(Messages.load());
+			processOptions(Messages.load());
 			for (String key : Messages.getKeys()){
 				if (key.startsWith("<<hasperm|")) permissionTriggerers.add(key.substring(10,key.length() - 2));
 			}
@@ -225,9 +226,9 @@ public class rTriggers extends JavaPlugin {
 			/**************************
 			 * Tag replacement start!
 			 *************************/
-			String [] split =  untrimmedMessage.split(":");
+			String [] split =  untrimmedMessage.split(":", 3);
 			
-			String message = rParser.combineSplit(2, split, ":");
+			String message = split[2];
 			
 			message = replaceLists(message);
 			
@@ -417,14 +418,14 @@ public class rTriggers extends JavaPlugin {
 		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
 		sendToUs     = constructPlayerList(sendToGroupsFiltered    , sendToPermissions    , sendToUs);
 		sendToUs.removeAll(dontSendToUs);
-		for (Player sendToMe : sendToUs){
-			sendToPlayer(message, sendToMe, flagCommand, flagSay);
-		}
+		
+		for (Player sendToMe : sendToUs) sendToPlayer(message, sendToMe, flagCommand, flagSay);
 	}
 	/**
-	 * @param groups An array of groups you want the members of
-	 * @param players A list of players (may already contain players)
-	 * @return A set containing players from list and players who are members of groups[]
+	 * @param groups A set of group names
+	 * @param permissions A set of permission node names 
+	 * @param players A set of players
+	 * @return A set containing players from the players set and players who either are members of one of the groups or have one of the permissions.
 	 */
 	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> players){
 		if (PermissionsPlugin == null) return players;

@@ -66,11 +66,11 @@ public class rPropertiesFile {
 	    	if (line.startsWith("#")|| line.isEmpty() || line.startsWith("\n") || line.startsWith("\r"))
 	    		continue;
 	    	
-    		String [] split = line.split("=");
-    		if (!(split.length >= 2)) continue;
+    		String [] split = line.split("=", 2);
+    		if (!(split.length == 2)) continue;
     		
     		String propertyKeys = split[0];
-    		String propertyValue = rParser.combineSplit(1, split, "=");
+    		String propertyValue = split[1];
     		
     		for (String key : propertyKeys.split(",")) {
     			if (key.startsWith("<<") && !key.startsWith("<<list")) key = key.toLowerCase();
