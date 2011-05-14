@@ -20,30 +20,20 @@ public class rTriggersServerListener extends ServerListener {
 		plugins.add(pluginName);
 	}
 	
-	public void checkAlreadyLoaded() {
-		PluginManager PM = rTriggers.MCServer.getPluginManager();
-		for(String checkMe:plugins){
-			if(PM.getPlugin(checkMe) != null){
-				rTriggers.triggerMessages("onload|" + checkMe);
-			}
-		}
+	public void checkAlreadyLoaded(PluginManager PM) {
+		for(String checkMe:plugins)
+			if(PM.getPlugin(checkMe) != null) rTriggers.triggerMessages("onload|" + checkMe);
 	}	
 	
 	@Override
     public void onPluginEnable(PluginEnableEvent event) {
-        rTriggers.grabPlugins();
+        rTriggers.grabPlugins(rTriggers.pluginManager);
         
         String pluginName = event.getPlugin().getDescription().getName();
         if(plugins.contains(pluginName)) rTriggers.triggerMessages("onload|" + pluginName);
         
-        // Check to see if we need a payment method
-        if (!this.rTriggers.economyMethods.hasMethod()) {
-            if(this.rTriggers.economyMethods.setMethod(event.getPlugin())) {
-                // You might want to make this a public variable inside your MAIN class public Method Method = null;
-                // then reference it through this.plugin.Method so that way you can use it in the rest of your plugin ;)
-                this.rTriggers.economyPlugin = this.rTriggers.economyMethods.getMethod();
-            }
-        }
+        if (!rTriggers.economyMethods.hasMethod() && rTriggers.economyMethods.setMethod(event.getPlugin()))
+            this.rTriggers.economyPlugin = this.rTriggers.economyMethods.getMethod();
     }
 	
 	@Override
@@ -61,11 +51,9 @@ public class rTriggersServerListener extends ServerListener {
             }
         }
 
-        // Check to see if the plugin thats being disabled is the one we are using
-        if (this.rTriggers.economyMethods != null && this.rTriggers.economyMethods.hasMethod()) {
-            Boolean check = this.rTriggers.economyMethods.checkDisabled(event.getPlugin());
-
-            if(check) {
+        // Check to see if the plugin thats being disabled is the one we are using for economy
+        if (rTriggers.economyMethods != null && rTriggers.economyMethods.hasMethod()) {
+            if(rTriggers.economyMethods.checkDisabled(event.getPlugin())) {
                 this.rTriggers.economyPlugin = null;
                 System.out.println("[rTriggers] Payment method was disabled. No longer accepting payments.");
             }

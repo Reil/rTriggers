@@ -28,6 +28,7 @@ import com.reil.bukkit.rParser.rParser;
 public class rTriggers extends JavaPlugin {
 	private ConsoleCommandSender Console;
 	private boolean registered = false;
+	public PluginManager pluginManager;
 	public rPropertiesFile Messages;
 	public Server MCServer;
 	public Random RNG;
@@ -116,12 +117,13 @@ public class rTriggers extends JavaPlugin {
 		log = Logger.getLogger("Minecraft");
 		RNG = new Random();
 		MCServer = getServer();
+		pluginManager = MCServer.getPluginManager();
 		Console = new ConsoleCommandSender(MCServer);
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
 
 		try {
-			grabPlugins();
+			grabPlugins(pluginManager);
 			registerEvents(Messages.load());
 			for (String key : Messages.getKeys()){
 				if (key.startsWith("<<hasperm|")) permissionTriggerers.add(key.substring(10,key.length() - 2));
@@ -129,10 +131,10 @@ public class rTriggers extends JavaPlugin {
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
-		generateTimers();
+		generateTimers(Messages);
 		
 		// Do onload events for everything that might have loaded before rTriggers
-		serverListener.checkAlreadyLoaded();
+		serverListener.checkAlreadyLoaded(pluginManager);
 		
 		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
 	}
@@ -141,8 +143,7 @@ public class rTriggers extends JavaPlugin {
 	 *  Checks to see if plugins which rTriggers supports have already been loaded.
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
-	public void grabPlugins() {
-		PluginManager manager = MCServer.getPluginManager();
+	public void grabPlugins(PluginManager manager) {
 		if (PermissionsPlugin == null && manager.getPlugin("Permissions") != null){
         	PermissionsPlugin = Permissions.Security;
         	log.info("[rTriggers] Attached to Permissions.");
@@ -159,11 +160,11 @@ public class rTriggers extends JavaPlugin {
 	 * Precondition: We already have messages loaded
 	 * Postcondition: New threads for each timer have been created.  
 	 */
-	public void generateTimers(){
-		for(String key : Messages.getKeys()){
+	public void generateTimers(rPropertiesFile messages){
+		for(String key : messages.getKeys()){
 			try {
 				if (key.startsWith("<<timer|")){
-					for(String message : Messages.getStrings(key)){
+					for(String message : messages.getStrings(key)){
 						MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
 								new rTriggersTimer(this, message),
 								0,
@@ -174,7 +175,7 @@ public class rTriggers extends JavaPlugin {
 				log.log(Level.WARNING, "[rTriggers] Invalid number string:" + key);
 			}
 		}
-		if (Messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
+		if (messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
 	}
 	
 	@Override
@@ -196,8 +197,7 @@ public class rTriggers extends JavaPlugin {
 		if (!optionsMap.containsKey(option)) return false; 		// This option does not trigger anything
 		
 		/* Build list of groups */
-		ArrayList<String>groupArray = new ArrayList<String>();
-		boolean triggeredMessage = false;
+		List<String>groupArray = new LinkedList<String>();
 		if (triggerer != null){
 			/* Everyone has at least these two. */
 			groupArray.add("<<player|" + triggerer.getName() + ">>");
@@ -247,9 +247,8 @@ public class rTriggers extends JavaPlugin {
 			 *  Tag replacement end! */
 			
 			sendMessage(message, triggerer, split[0]);
-			triggeredMessage = true;
 		}
-		return triggeredMessage;
+		return !sendThese.isEmpty();
 	}
 	
 	/*
@@ -383,8 +382,8 @@ public class rTriggers extends JavaPlugin {
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
 				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
-				String [] with    = {"server", "", "", "", ""};
-				log.info("[rTriggers] " + rParser.parseMessage(message, replace, with));
+				String [] with    = {"server", "", "", "", "§"};
+				log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
 			}
 			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
 				int distance = new Integer(group.substring(16, group.length() - 2));
@@ -395,7 +394,7 @@ public class rTriggers extends JavaPlugin {
 				String [] with    = {"Twitter", "", "", "",""};
 				if (ServerEventsPlugin != null){
 					try {
-						ServerEvents.displayMessage(rParser.parseMessage(message, replace, with));
+						ServerEvents.displayMessage(rParser.replaceWords(message, replace, with));
 					} catch (ClassCastException ex){
 						log.info("[rTriggers] ServerEvents not found!");
 					}
@@ -407,9 +406,8 @@ public class rTriggers extends JavaPlugin {
 			} else if (group.equalsIgnoreCase("<<execute>>")){
 				Runtime rt = Runtime.getRuntime();
 				log.info("[rTriggers] Executing:" + message);
-				try {
-					Process pr = rt.exec(message);
-				} catch (IOException e) { e.printStackTrace(); }
+				try {Process pr = rt.exec(message);}
+				catch (IOException e) { e.printStackTrace(); }
 			}
 		}
 		/****************************************************
@@ -417,7 +415,7 @@ public class rTriggers extends JavaPlugin {
 		 * Find all the  players who belong to the non-special
 		 * case groups, and send the message to them.  */
 		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
-		sendToUs     = constructPlayerList(sendToGroupsFiltered, sendToPermissions, sendToUs);
+		sendToUs     = constructPlayerList(sendToGroupsFiltered    , sendToPermissions    , sendToUs);
 		sendToUs.removeAll(dontSendToUs);
 		for (Player sendToMe : sendToUs){
 			sendToPlayer(message, sendToMe, flagCommand, flagSay);
@@ -425,30 +423,30 @@ public class rTriggers extends JavaPlugin {
 	}
 	/**
 	 * @param groups An array of groups you want the members of
-	 * @param list A list of players (may already contain players)
+	 * @param players A list of players (may already contain players)
 	 * @return A set containing players from list and players who are members of groups[]
 	 */
-	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> list){
-		if (PermissionsPlugin == null) return list;
+	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> players){
+		if (PermissionsPlugin == null) return players;
 		
 		building_the_list:
 		for (Player addMe: MCServer.getOnlinePlayers()){
-			if (list.contains(addMe)) continue;
+			if (players.contains(addMe)) continue;
 			for(String oneOfUs : groups){
 				if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
-					list.add(addMe);
+					players.add(addMe);
 					continue building_the_list;
 				}
 			}
 			for (String perm : permissions) {
 				if (PermissionsPlugin.has(addMe, perm)){
-					list.add(addMe);
+					players.add(addMe);
 					continue building_the_list;
 				}
 					
 			}
 		}
-		return list;
+		return players;
 	}
 	
 	public void sendToPlayer(String message, Player recipient, boolean flagCommand, boolean flagSay) {
@@ -456,9 +454,9 @@ public class rTriggers extends JavaPlugin {
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
 		message = rParser.parseMessage(message, replace, with);
 		if (flagSay)
-			for(String sayThis : message.split("\n"))   recipient.chat(sayThis);
+			for(String sayThis : message.split("\n")) recipient.chat(sayThis);
 		if (!flagCommand && !flagSay)
-			for(String sendMe  : message.split("\n"))   recipient.sendMessage(sendMe);
+			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
 		if(flagCommand)
 			for(String command : message.split("\n")) recipient.performCommand(command.replaceAll("§.", ""));
 	}
