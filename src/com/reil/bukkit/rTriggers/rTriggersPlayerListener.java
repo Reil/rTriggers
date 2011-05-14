@@ -1,5 +1,6 @@
 package com.reil.bukkit.rTriggers;
-import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.*;
@@ -48,13 +49,34 @@ public class rTriggersPlayerListener extends PlayerListener {
 	@Override
 	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event){
 		Player player = event.getPlayer();
-		ArrayList<String> replaceThese = new ArrayList<String>();
-		ArrayList<String> withThese = new ArrayList<String>();
+		
 		String [] split = event.getMessage().split(" ");
-		for(int i = 1; i < split.length; i++){
+		if(! (rTriggers.optionsMap.containsKey("oncommand|" + split[0])
+				|| rTriggers.optionsMap.containsKey("oncommand|" + split[0] + "|override"))) return;
+		
+		List<String> replaceThese = new LinkedList<String>();
+		List<String> withThese    = new LinkedList<String>();
+		/* Build parameter list */
+		StringBuilder params = new StringBuilder();
+		StringBuilder reverseParams = new StringBuilder();
+		String prefix = ""; 
+		int max = split.length;
+		for(int i = 1; i < max; i++){
+			params.append(prefix + split[i]);
+			reverseParams.insert(0, split[max - i] + prefix);
+			prefix = " ";
+			
 			replaceThese.add("<<param" + Integer.toString(i) + ">>");
 			withThese.add(split[i]);
+			
+			replaceThese.add("<<param" + Integer.toString(i) + "->>");
+			withThese.add(params.toString());
+
+			replaceThese.add("<<param" + Integer.toString(max - i) + "\\+>>");
+			withThese.add(reverseParams.toString());
 		}
+		replaceThese.add("<<params>>");
+		withThese.add(params.toString());
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 

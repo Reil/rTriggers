@@ -18,9 +18,10 @@ import org.bukkit.command.*;
 
 import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
-import com.iConomy.iConomy;
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
+import com.nijikokun.register.payment.Method;
+import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
 
 @SuppressWarnings("unused")
@@ -36,14 +37,17 @@ public class rTriggers extends JavaPlugin {
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
 	
-	public iConomy iConomyPlugin;
+	public Method economyPlugin = null;
+	public Methods economyMethods;
 	public CraftIRC CraftIRCPlugin;
 	public PermissionHandler PermissionsPlugin;
 	public Plugin ServerEventsPlugin;
     
-    HashMap <String, Integer> listTracker = new HashMap<String,Integer>();
-	HashMap <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
-	HashMap <Integer, Entity> deathBringer = new HashMap <Integer, Entity>();
+    Map <String, Integer> listTracker = new HashMap<String,Integer>();
+	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
+	Map <Integer, Entity> deathBringer = new HashMap <Integer, Entity>();
+	Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
+	List<String> permissionTriggerers = new LinkedList<String>();
 
     /**
      * Goes through each message in messages[] and registers events that it sees in each.
@@ -95,6 +99,12 @@ public class rTriggers extends JavaPlugin {
 					}
 				}
 			}
+			
+			if (options.isEmpty()) options = "onlogin";
+			for(String option : options.split(",")){
+				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
+				optionsMap.get(option).add(message);
+			}
 		}
 		
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
@@ -102,6 +112,7 @@ public class rTriggers extends JavaPlugin {
 	} 
 	
 	public void onEnable(){
+		economyMethods = new Methods();
 		log = Logger.getLogger("Minecraft");
 		RNG = new Random();
 		MCServer = getServer();
@@ -112,6 +123,9 @@ public class rTriggers extends JavaPlugin {
 		try {
 			grabPlugins();
 			registerEvents(Messages.load());
+			for (String key : Messages.getKeys()){
+				if (key.startsWith("<<hasperm|")) permissionTriggerers.add(key.substring(10,key.length() - 2));
+			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
@@ -132,12 +146,6 @@ public class rTriggers extends JavaPlugin {
 		if (PermissionsPlugin == null && manager.getPlugin("Permissions") != null){
         	PermissionsPlugin = Permissions.Security;
         	log.info("[rTriggers] Attached to Permissions.");
-        }
-        
-        Plugin iConomyTry = manager.getPlugin("iConomy");
-        if (iConomyPlugin == null && iConomyTry != null){
-        	iConomyPlugin = (iConomy) iConomyTry;
-        	log.info("[rTriggers] Attached to iConomy.");
         }
         
         Plugin CraftIRCTry = manager.getPlugin("CraftIRC");
@@ -184,65 +192,62 @@ public class rTriggers extends JavaPlugin {
 	public boolean triggerMessages(Player triggerMessage, String option){ return triggerMessages(triggerMessage, option, new String[0], new String[0]);	}
 	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
 	
-	public boolean triggerMessages(Player triggerMessage, String option, String[] eventToReplace, String[] eventReplaceWith){
+	public boolean triggerMessages(Player triggerer, String option, String[] eventToReplace, String[] eventReplaceWith){
+		if (!optionsMap.containsKey(option)) return false; 		// This option does not trigger anything
+		
+		/* Build list of groups */
 		ArrayList<String>groupArray = new ArrayList<String>();
 		boolean triggeredMessage = false;
-		if (triggerMessage != null){
+		if (triggerer != null){
 			/* Everyone has at least these two. */
-			groupArray.add("<<player|" + triggerMessage.getName() + ">>");
+			groupArray.add("<<player|" + triggerer.getName() + ">>");
 			groupArray.add("<<everyone>>");
 			/* Add any groups the user's a member of. */
-			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerMessage.getWorld().getName(),triggerMessage.getName())));
+			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerer.getWorld().getName(),triggerer.getName())));
 		} else groupArray.add("<<customtrigger>>");
 		
-		/* Check for messages triggered by each group the player is a member of. */
-		for (String groupName : groupArray){
-			if (!Messages.keyExists(groupName)) continue;
-			if (groupName.startsWith("<<") && groupName.startsWith("<<list|")) groupName = groupName.toLowerCase();
-			// Check all the messages for this group 
-			for (String sendToGroups_Message : Messages.getStrings(groupName)){
-				boolean hookValid = false;
-				String [] split =  sendToGroups_Message.split(":");
-				String [] options =  split[1].split(",");
-				
-				// See if any of the options of this message match the one we called the funciton with
-				if (split[1].isEmpty() && option.equalsIgnoreCase("onlogin")){
-					// Default case: No options is equivalent to onlogin
-					hookValid = true;
-				} else for (int i = 0; i < options.length && hookValid == false; i++){
-					// Otherwise, just check each option, see if it matches the parameter
-					hookValid = options[i].equalsIgnoreCase(option);
+		/* Build set of message candidates */
+		Set<String> sendThese = new LinkedHashSet<String>();
+		for (String groupName : groupArray)
+			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
+		if (PermissionsPlugin != null && triggerer != null){
+			for(String permission : permissionTriggerers){
+				if(PermissionsPlugin.has(triggerer, permission)) {
+					sendThese.addAll(Arrays.asList(Messages.getStrings("<<hasperm|" + permission + ">>")));
 				}
-				
-				if (!hookValid) continue;
-				
-				// If the message matched our option, we sort it out and send it	
-				/**************************
-				 * Tag replacement start!
-				 *************************/
-				
-				String message = rParser.combineSplit(2, split, ":");
-				
-				message = replaceLists(message);
-				
-				// Regex's which catch @, but not \@ and &, but not \&
-				String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-				String [] with    = {"\n§f"      , "§"         , "§"        ,""};
-				message = rParser.replaceWords(message, replace, with);
-				
-				String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
-				String [] with2    = getTagReplacements(triggerMessage);
-				message = rParser.replaceWords(message, replace2, with2);
-				
-				
-				if (eventToReplace.length > 0)
-					message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				/**************************
-				 *  Tag replacement end! */
-				
-				sendMessage(message, triggerMessage, split[0]);
-				triggeredMessage = true;
 			}
+		}
+		// Remove candidates that aren't for this option
+		sendThese.retainAll(optionsMap.get(option));
+		
+		/* Send all message candidates */
+		for (String untrimmedMessage : sendThese){	
+			/**************************
+			 * Tag replacement start!
+			 *************************/
+			String [] split =  untrimmedMessage.split(":");
+			
+			String message = rParser.combineSplit(2, split, ":");
+			
+			message = replaceLists(message);
+			
+			// Regex's which catch @, but not \@ and &, but not \&
+			String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
+			String [] with    = {"\n§f"      , "§"         , "§"        ,""};
+			message = rParser.replaceWords(message, replace, with);
+			
+			String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+			String [] with2    = getTagReplacements(triggerer);
+			message = rParser.replaceWords(message, replace2, with2);
+			
+			
+			if (eventToReplace.length > 0)
+				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
+			/**************************
+			 *  Tag replacement end! */
+			
+			sendMessage(message, triggerer, split[0]);
+			triggeredMessage = true;
 		}
 		return triggeredMessage;
 	}
@@ -301,8 +306,8 @@ public class rTriggers extends JavaPlugin {
 		}
 		// Get balance tag
 		double balance = 0;
-		if (iConomyPlugin != null && iConomy.hasAccount(player.getName()))
-			balance = iConomy.getAccount(player.getName()).getHoldings().balance();
+		if (economyPlugin != null && economyPlugin.hasAccount(player.getName()))
+			balance = economyPlugin.getAccount(player.getName()).balance();
 		
 		// Get ip and locale tags
 		InetSocketAddress IP = player.getAddress();
@@ -338,8 +343,16 @@ public class rTriggers extends JavaPlugin {
 	 */
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
-		ArrayList <String> sendToGroupsFiltered = new ArrayList<String>();
-		HashSet <Player> sendToUs = new HashSet<Player>();
+		
+		Set <String> sendToGroupsFiltered     = new HashSet <String>();
+		Set <String> dontSendToGroupsFiltered = new HashSet <String>();
+		
+		Set <String> sendToPermissions     = new HashSet <String>();
+		Set <String> dontSendToPermissions = new HashSet <String>();
+		
+		Set <Player> sendToUs     = new HashSet<Player>();
+		Set <Player> dontSendToUs = new HashSet<Player>();
+		
 		boolean flagCommand  = false;
 		boolean flagSay      = false;
 		/*************************************
@@ -347,7 +360,17 @@ public class rTriggers extends JavaPlugin {
 		 * 1) Constructing list of groups to send to
 		 * 2) Processing 'special' groups (ones in double-chevrons) */
 		for (String group : sendToGroups){
-			if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
+			if (group.startsWith("not|")){
+				String notTarget = group.substring(4);
+				if (!notTarget.startsWith("<<")) dontSendToGroupsFiltered.add(notTarget);
+				else if (notTarget.equalsIgnoreCase("<<triggerer>>")) dontSendToUs.add(triggerer);
+				else if (notTarget.startsWith("<<player|")){
+					String playerName = group.substring(9, group.length()-2);
+					Player putMe = MCServer.getPlayer(playerName);
+					if (putMe != null) dontSendToUs.add(putMe);
+				}
+			}
+			else if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
 			/* Special cases: start! */
 			else if (group.equalsIgnoreCase("<<everyone>>"))          for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
 			else if (group.equalsIgnoreCase("<<triggerer>>"))         sendToUs.add(triggerer);
@@ -393,7 +416,10 @@ public class rTriggers extends JavaPlugin {
 		 * List of non-special case groups has been constructed.
 		 * Find all the  players who belong to the non-special
 		 * case groups, and send the message to them.  */
-		for (Player sendToMe : constructPlayerList(sendToGroupsFiltered.toArray(new String[sendToGroupsFiltered.size()]), sendToUs)){
+		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
+		sendToUs     = constructPlayerList(sendToGroupsFiltered, sendToPermissions, sendToUs);
+		sendToUs.removeAll(dontSendToUs);
+		for (Player sendToMe : sendToUs){
 			sendToPlayer(message, sendToMe, flagCommand, flagSay);
 		}
 	}
@@ -402,15 +428,24 @@ public class rTriggers extends JavaPlugin {
 	 * @param list A list of players (may already contain players)
 	 * @return A set containing players from list and players who are members of groups[]
 	 */
-	public Set<Player> constructPlayerList(String [] groups, HashSet<Player> list){
+	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> list){
 		if (PermissionsPlugin == null) return list;
+		
+		building_the_list:
 		for (Player addMe: MCServer.getOnlinePlayers()){
 			if (list.contains(addMe)) continue;
 			for(String oneOfUs : groups){
 				if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
 					list.add(addMe);
-					break;
+					continue building_the_list;
 				}
+			}
+			for (String perm : permissions) {
+				if (PermissionsPlugin.has(addMe, perm)){
+					list.add(addMe);
+					continue building_the_list;
+				}
+					
 			}
 		}
 		return list;
