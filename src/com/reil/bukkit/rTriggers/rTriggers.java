@@ -71,7 +71,7 @@ public class rTriggers extends JavaPlugin {
 		if (registered) return;
 		else registered = true;
 		
-		boolean [] flag = new boolean[6];
+		boolean [] flag = new boolean[7];
 		Arrays.fill(flag, false);
 		PluginManager manager = MCServer.getPluginManager();
 		
@@ -105,6 +105,10 @@ public class rTriggers extends JavaPlugin {
 				manager.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
 				flag[5] = true;
 			}
+			if(!flag[6] && options.contains("onrespawn")){
+				manager.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Monitor, this);
+				flag[6] = true;
+			}
 			if(options.contains("onload")){
 				for (String option: options.split(commaSplit)){
 					if (option.startsWith("onload|")) {
@@ -117,7 +121,8 @@ public class rTriggers extends JavaPlugin {
 			if (options.isEmpty()) options = "onlogin";
 			for(String option : options.split(commaSplit)){
 				if(option.startsWith("limit|")){
-					option = "limit";
+					if (option.endsWith("perTrigger")) option = "limit|perTrigger";
+					else option = "limit";
 				} else if (option.startsWith("delay|")) {
 					option = "delay";
 				}
@@ -244,7 +249,7 @@ public class rTriggers extends JavaPlugin {
 		/* Send all message candidates */
 		message_rollout:
 		for (String fullMessage : sendThese){	
-			if (tooSoon(fullMessage)) continue; // Don't send messages if they have the limit option and it's been too soon.
+			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
 			String [] split =  fullMessage.split(colonSplit, 3);
 			String message = split[2];
@@ -285,9 +290,30 @@ public class rTriggers extends JavaPlugin {
 		return !sendThese.isEmpty();
 	}
 	
-	private boolean tooSoon(String message) {
-		if (optionsMap.get("limit").contains(message)){
+	private boolean tooSoon(String message, Player triggerer) {
+		if (optionsMap.containsKey("limit") && optionsMap.get("limit").contains(message)){
 			long currentTime = System.currentTimeMillis();
+			if (!limitTracker.containsKey(message)){
+				limitTracker.put(message, currentTime);
+				return false;
+			}
+			
+			long lastTime = limitTracker.get(message);
+			// Find minimum wait time
+			long delay = 0;
+			for(String checkOption : message.split(colonSplit)[1].split(commaSplit)) {
+				if (checkOption.startsWith("limit|")) {
+					delay = 1000 * new Long(checkOption.substring(6));
+					break;
+				}
+			}			
+			if (currentTime - lastTime > delay) limitTracker.put(message, currentTime);
+			else return true;
+		} else if (triggerer != null &&
+				optionsMap.containsKey("limit|pertriggerer")&& 
+				optionsMap.get("limit|pertriggerer").contains(message)) {
+			long currentTime = System.currentTimeMillis();
+			message = triggerer.getName() + message;
 			if (!limitTracker.containsKey(message)){
 				limitTracker.put(message, currentTime);
 				return false;

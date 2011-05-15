@@ -47,6 +47,11 @@ public class rTriggersPlayerListener extends PlayerListener {
 	}
 	
 	@Override
+	public void onPlayerRespawn(PlayerRespawnEvent event){
+		this.rTriggers.triggerMessages(event.getPlayer(), "onrespawn");
+	}
+	
+	@Override
 	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event){
 		Player player = event.getPlayer();
 		
