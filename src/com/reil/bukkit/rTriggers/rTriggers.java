@@ -273,7 +273,7 @@ public class rTriggers extends JavaPlugin {
 			 *  Tag replacement end! */
 			
 			// Ship out the message.  If it has a delay on it, put it on the scheduler
-			if (!optionsMap.get("delay").contains(fullMessage))
+			if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage))
 				sendMessage(message, triggerer, split[0]);
 			else {
 				long waitTime = 0;
