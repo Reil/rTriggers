@@ -7,20 +7,20 @@ import org.bukkit.event.player.*;
 
 
 public class rTriggersPlayerListener extends PlayerListener {
-	private final rTriggers rTriggers;
+	private final rTriggers plugin;
 
 	/**
 	 * @param rTriggers
 	 */
 	rTriggersPlayerListener(rTriggers rTriggers) {
-		this.rTriggers = rTriggers;
+		this.plugin = rTriggers;
 	}
 	
 	@Override
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rTriggers.triggerMessages(triggerMessage, "onlogin");
-		if (this.rTriggers.triggerMessages(triggerMessage, "onlogin|override")){
+		this.plugin.triggerMessages(triggerMessage, "onlogin");
+		if (this.plugin.triggerMessages(triggerMessage, "onlogin|override")){
 			event.setJoinMessage("");
 		}
 		return;
@@ -29,12 +29,12 @@ public class rTriggersPlayerListener extends PlayerListener {
 	@Override
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
-		this.rTriggers.triggerMessages(triggerMessage, "ondisconnect");
-		if (this.rTriggers.triggerMessages(triggerMessage, "ondisconnect|override")){
+		this.plugin.triggerMessages(triggerMessage, "ondisconnect");
+		if (this.plugin.triggerMessages(triggerMessage, "ondisconnect|override")){
 			event.setQuitMessage("");
 		}
-		this.rTriggers.deathCause.remove(triggerMessage.getEntityId());
-		this.rTriggers.deathBringer.remove(triggerMessage.getEntityId());
+		this.plugin.deathCause.remove(triggerMessage.getEntityId());
+		this.plugin.deathBringer.remove(triggerMessage.getEntityId());
 		return;
 	}
 	
@@ -43,12 +43,12 @@ public class rTriggersPlayerListener extends PlayerListener {
 		Player triggerMessage = event.getPlayer();
 		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
 		String [] withThese =    {event.getReason() , triggerMessage.getName()};
-		this.rTriggers.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
+		this.plugin.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
 	@Override
 	public void onPlayerRespawn(PlayerRespawnEvent event){
-		this.rTriggers.triggerMessages(event.getPlayer(), "onrespawn");
+		this.plugin.triggerMessages(event.getPlayer(), "onrespawn");
 	}
 	
 	@Override
@@ -56,8 +56,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 		Player player = event.getPlayer();
 		
 		String [] split = event.getMessage().split(" ");
-		if(! (rTriggers.optionsMap.containsKey("oncommand|" + split[0])
-				|| rTriggers.optionsMap.containsKey("oncommand|" + split[0] + "|override"))) return;
+		if(! (plugin.optionsMap.containsKey("oncommand|" + split[0])
+				|| plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override"))) return;
 		
 		List<String> replaceThese = new LinkedList<String>();
 		List<String> withThese    = new LinkedList<String>();
@@ -85,15 +85,15 @@ public class rTriggersPlayerListener extends PlayerListener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
-		this.rTriggers.triggerMessages(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
+		this.plugin.triggerMessages(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
 		
 		
         if (split[0].equalsIgnoreCase("/rTriggers")) {
-			this.rTriggers.triggerMessages(player, "onrTriggers", replaceTheseArray, withTheseArray);
+			this.plugin.triggerMessages(player, "onrTriggers", replaceTheseArray, withTheseArray);
 			event.setCancelled(true);
 		}
         
-        if (this.rTriggers.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
+        if (this.plugin.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
         	event.setCancelled(true);
         }
 		

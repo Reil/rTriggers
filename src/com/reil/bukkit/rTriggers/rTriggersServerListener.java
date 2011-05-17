@@ -6,55 +6,55 @@ import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 
 public class rTriggersServerListener extends ServerListener {
-	rTriggers rTriggers;
-	HashSet<String> plugins = new HashSet<String>();
+	rTriggers plugin;
+	HashSet<String> watchPlugins = new HashSet<String>();
 	
 	rTriggersServerListener(rTriggers rTriggers){
-		this.rTriggers = rTriggers;
+		this.plugin = rTriggers;
 	}
 	@Override
 	public void onServerCommand(ServerCommandEvent event){
-		this.rTriggers.triggerMessages("onconsole");
+		plugin.triggerMessages("onconsole");
 	}
 	public void listenFor(String pluginName) {
-		plugins.add(pluginName);
+		watchPlugins.add(pluginName);
 	}
 	
 	public void checkAlreadyLoaded(PluginManager PM) {
-		for(String checkMe:plugins)
-			if(PM.getPlugin(checkMe) != null) rTriggers.triggerMessages("onload|" + checkMe);
+		for(String checkMe:watchPlugins)
+			if(PM.getPlugin(checkMe) != null) plugin.triggerMessages("onload|" + checkMe);
 	}	
 	
 	@Override
     public void onPluginEnable(PluginEnableEvent event) {
-        rTriggers.grabPlugins(rTriggers.pluginManager);
+        plugin.grabPlugins(plugin.pluginManager);
         
         String pluginName = event.getPlugin().getDescription().getName();
-        if(plugins.contains(pluginName)) rTriggers.triggerMessages("onload|" + pluginName);
+        if(watchPlugins.contains(pluginName)) plugin.triggerMessages("onload|" + pluginName);
         
-        if (!rTriggers.economyMethods.hasMethod() && rTriggers.economyMethods.setMethod(event.getPlugin()))
-            rTriggers.economyPlugin = rTriggers.economyMethods.getMethod();
+        if (!plugin.economyMethods.hasMethod() && plugin.economyMethods.setMethod(event.getPlugin()))
+            plugin.economyPlugin = plugin.economyMethods.getMethod();
     }
 	
 	@Override
     public void onPluginDisable(PluginDisableEvent event) {
-		if (rTriggers.PermissionsPlugin != null) {
+		if (plugin.PermissionsPlugin != null) {
             if (event.getPlugin().getDescription().getName().equals("Permissions")) {
-            	rTriggers.PermissionsPlugin = null;
+            	plugin.PermissionsPlugin = null;
                 System.out.println("[rTriggers] Unattached from Permissions.");
             }
         }
-        if (rTriggers.CraftIRCPlugin != null) {
+        if (plugin.CraftIRCPlugin != null) {
             if (event.getPlugin().getDescription().getName().equals("CraftIRC")) {
-            	rTriggers.CraftIRCPlugin = null;
+            	plugin.CraftIRCPlugin = null;
                 System.out.println("[rTriggers] Unattached from CraftIRC.");
             }
         }
 
         // Check to see if the plugin thats being disabled is the one we are using for economy
-        if (rTriggers.economyMethods != null && rTriggers.economyMethods.hasMethod()) {
-            if(rTriggers.economyMethods.checkDisabled(event.getPlugin())) {
-                this.rTriggers.economyPlugin = null;
+        if (plugin.economyMethods != null && plugin.economyMethods.hasMethod()) {
+            if(plugin.economyMethods.checkDisabled(event.getPlugin())) {
+                this.plugin.economyPlugin = null;
                 System.out.println("[rTriggers] Payment method was disabled. No longer accepting payments.");
             }
         }

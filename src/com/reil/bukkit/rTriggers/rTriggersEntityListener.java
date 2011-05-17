@@ -5,18 +5,18 @@ import org.bukkit.event.entity.*;
 
 
 public class rTriggersEntityListener extends EntityListener{
-	private final rTriggers rTriggersPlugin;
+	private final rTriggers plugin;
 	rTriggersEntityListener(rTriggers rTriggers) {
-		this.rTriggersPlugin = rTriggers;
+		this.plugin = rTriggers;
 	}
 	
 	@Override
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
 		Integer gotHit = ((Player) event.getEntity()).getEntityId();
-		this.rTriggersPlugin.deathCause.put(gotHit, event.getCause());
-		if (event instanceof EntityDamageByEntityEvent){
-			this.rTriggersPlugin.deathBringer.put(gotHit, ((EntityDamageByEntityEvent) event).getDamager());
+		plugin.deathCause.put(gotHit, event.getCause());
+		if (event instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) event).getDamager() instanceof Player){
+			plugin.deathBringer.put(gotHit, (Player) ((EntityDamageByEntityEvent) event).getDamager());
 		}
 	}
 	@Override
@@ -26,33 +26,26 @@ public class rTriggersEntityListener extends EntityListener{
 		if (event.getEntity() == null || !(event.getEntity() instanceof Player)) return;
 		Player deadGuy = (Player) event.getEntity();
 		Integer deadGuyId = deadGuy.getEntityId();
-		EntityDamageEvent.DamageCause causeOfDeath = this.rTriggersPlugin.deathCause.get(deadGuyId);
+		EntityDamageEvent.DamageCause causeOfDeath = plugin.deathCause.get(deadGuyId);
 		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
 		triggerOption = causeOfDeath.toString().toLowerCase();
 		deathBy = rTriggers.damageCauseNatural(causeOfDeath);
-		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && this.rTriggersPlugin.deathBringer.get(deadGuyId) != null){
-			String [] replaceThese = {"<<death-cause>>", "<<killer>>"};
-			if (this.rTriggersPlugin.deathBringer.get(deadGuyId) instanceof Player) {
-				String [] withThese = {deathBy, ((Player) this.rTriggersPlugin.deathBringer.get(deadGuyId)).getDisplayName() };
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|entity", replaceThese, withThese);
-			} else{
-				String killer = this.rTriggersPlugin.deathBringer.get(deadGuyId).getClass().getName();
-				killer = killer.substring(killer.lastIndexOf("Craft") + "Craft".length());
-				String [] withThese = {deathBy, killer};
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|" + killer, replaceThese, withThese);
-				rTriggersPlugin.triggerMessages(deadGuy, "ondeath|entity", replaceThese, withThese);
-			}
+		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && plugin.deathBringer.get(deadGuyId) != null){
+			Player killer = plugin.deathBringer.get(deadGuyId);
+			String weapon = killer.getItemInHand().getType().toString().toLowerCase().replace("_", " ");
+			if (weapon == "air") weapon = "fists";
+			String [] replaceThese = {"<<death-cause>>", "<<killer>>"           , "<<weapon>>"};
+			String [] withThese    = {deathBy          , killer.getDisplayName(), weapon };
+			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
 		} 
 		else{
 			String [] replaceThese = {"<<death-cause>>"};
 			String [] withThese = {deathBy};
-			rTriggersPlugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
-			rTriggersPlugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|natural" + triggerOption, replaceThese, withThese);
 		}
 	}
 }

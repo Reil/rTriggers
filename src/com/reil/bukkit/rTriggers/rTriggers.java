@@ -29,6 +29,8 @@ import com.reil.bukkit.rParser.rParser;
 // Fake Player
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.ItemInWorldManager;
+import net.minecraft.server.NetServerHandler;
+
 import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
@@ -59,7 +61,7 @@ public class rTriggers extends JavaPlugin {
 	Map <String, Long> limitTracker = new HashMap<String, Long>();
     Map <String, Integer> listTracker = new HashMap<String,Integer>();
 	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
-	Map <Integer, Entity> deathBringer = new HashMap <Integer, Entity>();
+	Map <Integer, Player> deathBringer = new HashMap <Integer, Player>();
 	Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
 	List<String> permissionTriggerers = new LinkedList<String>();
 
@@ -569,6 +571,8 @@ public class rTriggers extends JavaPlugin {
 			return "creeper";
 		case CUSTOM:
 			return "the unknown";
+		case LIGHTNING:
+			return "lighning";
 		default:
 			return "something";
 		}
@@ -582,6 +586,11 @@ public class rTriggers extends JavaPlugin {
                         Name, new ItemInWorldManager(cWorld.getHandle()));
         
         fakeEntityPlayer.netServerHandler = ((CraftPlayer) player).getHandle().netServerHandler;
+        
+        NetServerHandler playerNSH = ((CraftPlayer)player).getHandle().netServerHandler;
+        FakeNetServerHandler fakeNSH = new FakeNetServerHandler(cServer.getServer(), playerNSH.networkManager, fakeEntityPlayer);
+        playerNSH.networkManager.a(playerNSH);
+        fakeEntityPlayer.netServerHandler = fakeNSH;
         
         Player fakePlayer = (Player) fakeEntityPlayer.getBukkitEntity();
         fakePlayer.setDisplayName(Name);
