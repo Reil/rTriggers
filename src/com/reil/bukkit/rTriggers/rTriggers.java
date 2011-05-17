@@ -404,7 +404,7 @@ public class rTriggers extends JavaPlugin {
 			locale = "";
 		}
 		String [] returnArray = { player.getName(), IP.toString(), locale, country, Double.toString(balance)};
-		return returnArray; 
+		return returnArray;
 	}
 
 	public void sendMessage(String message, Player triggerMessage, String Groups){
