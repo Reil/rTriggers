@@ -16,6 +16,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.command.*;
 
 // Plugin hooking
@@ -41,6 +42,7 @@ import org.bukkit.craftbukkit.entity.CraftPlayer;
 public class rTriggers extends JavaPlugin {
 	private ConsoleCommandSender Console;
 	private boolean registered = false;
+	public BukkitScheduler bukkitScheduler;
 	public PluginManager pluginManager;
 	public rPropertiesFile Messages;
 	public Server MCServer;
@@ -145,6 +147,7 @@ public class rTriggers extends JavaPlugin {
 		log = Logger.getLogger("Minecraft");
 		RNG = new Random();
 		MCServer = getServer();
+		bukkitScheduler = MCServer.getScheduler();
 		pluginManager = MCServer.getPluginManager();
 		Console = new ConsoleCommandSender(MCServer);
 		getDataFolder().mkdir();
@@ -194,7 +197,7 @@ public class rTriggers extends JavaPlugin {
 				if (key.startsWith("<<timer|")){
 					for(String message : messages.getStrings(key)){
 						long waitTime = 20 * new Long(key.substring(8, key.length()-2));
-						MCServer.getScheduler().scheduleAsyncRepeatingTask (this,
+						bukkitScheduler.scheduleAsyncRepeatingTask (this,
 								new rTriggersTimer(this, message),
 								waitTime, waitTime);
 					}
@@ -209,7 +212,7 @@ public class rTriggers extends JavaPlugin {
 	@Override
 	public void onDisable(){
 		Messages.save();
-		MCServer.getScheduler().cancelTasks(this);
+		bukkitScheduler.cancelTasks(this);
 		log.info("[rTriggers] Disabled!");
 	} 
 	
@@ -258,7 +261,7 @@ public class rTriggers extends JavaPlugin {
 				for(String checkOption : split[1].split(commaSplit)) {
 					if (checkOption.startsWith("delay|")) {
 						waitTime = 20 * new Long(checkOption.substring(6));
-						MCServer.getScheduler().scheduleAsyncDelayedTask (this,
+						bukkitScheduler.scheduleAsyncDelayedTask (this,
 								new rTriggersTimer(this, split[0] + "::"+message, triggerer),
 								waitTime);
 					}
