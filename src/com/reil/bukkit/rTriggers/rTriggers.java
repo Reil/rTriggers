@@ -232,6 +232,9 @@ public class rTriggers extends JavaPlugin {
 		for (String fullMessage : sendThese){	
 			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
+			if (eventToReplace.length > 0)
+				fullMessage = rParser.replaceWords(fullMessage, eventToReplace, eventReplaceWith);
+			
 			String [] split =  fullMessage.split(colonSplit, 3);
 			String message = split[2];
 			/**************************
@@ -247,9 +250,6 @@ public class rTriggers extends JavaPlugin {
 			String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
 			String [] with2    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace2, with2);
-			
-			if (eventToReplace.length > 0)
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
 			/**************************
 			 *  Tag replacement end! */
 			
