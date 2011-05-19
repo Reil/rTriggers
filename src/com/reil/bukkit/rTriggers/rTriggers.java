@@ -232,9 +232,6 @@ public class rTriggers extends JavaPlugin {
 		for (String fullMessage : sendThese){	
 			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
-			if (eventToReplace.length > 0)
-				fullMessage = rParser.replaceWords(fullMessage, eventToReplace, eventReplaceWith);
-			
 			String [] split =  fullMessage.split(colonSplit, 3);
 			String message = split[2];
 			/**************************
@@ -250,6 +247,12 @@ public class rTriggers extends JavaPlugin {
 			String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
 			String [] with2    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace2, with2);
+			
+			if (eventToReplace.length > 0) {
+				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
+				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
+				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
+			}
 			/**************************
 			 *  Tag replacement end! */
 			
@@ -260,7 +263,12 @@ public class rTriggers extends JavaPlugin {
 				long waitTime = 0;
 				for(String checkOption : split[1].split(commaSplit)) {
 					if (checkOption.startsWith("delay|")) {
-						waitTime = 20 * new Long(checkOption.substring(6));
+						try{
+							waitTime = 20 * Long.parseLong(checkOption.substring(6));
+						} catch (NumberFormatException e) {
+							log.info("[rTriggers] Bad number format on option: " + checkOption + "\n in message: " + fullMessage);
+							continue;
+						}
 						bukkitScheduler.scheduleAsyncDelayedTask (this,
 								new rTriggersTimer(this, split[0] + "::"+message, triggerer),
 								waitTime);
