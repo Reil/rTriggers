@@ -56,8 +56,12 @@ public class rTriggersPlayerListener extends PlayerListener {
 		Player player = event.getPlayer();
 		
 		String [] split = event.getMessage().split(" ");
-		if(! (plugin.optionsMap.containsKey("oncommand|" + split[0])
-				|| plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override"))) return;
+		int numParams = split.length - 1;
+		if(! (plugin.optionsMap.containsKey("oncommand|" + split[0]) ||
+				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|" + numParams) ||
+				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override") ||
+				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override|" + numParams)
+				)) return;
 		
 		List<String> replaceThese = new LinkedList<String>();
 		List<String> withThese    = new LinkedList<String>();
@@ -93,7 +97,8 @@ public class rTriggersPlayerListener extends PlayerListener {
 			event.setCancelled(true);
 		}
         
-        if (this.plugin.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)){
+        if (plugin.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)
+        		|| plugin.triggerMessages(player, "oncommand|" + split[0] + "|override|" + numParams, replaceTheseArray, withTheseArray)){
         	event.setCancelled(true);
         }
 		
