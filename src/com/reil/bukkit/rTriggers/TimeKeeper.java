@@ -4,8 +4,6 @@ import java.util.Calendar;
 
 import org.bukkit.scheduler.BukkitScheduler;
 
-import com.reil.bukkit.rParser.rParser;
-
 public class TimeKeeper implements Runnable {
 	long delay;
 	long GMTOffset;
