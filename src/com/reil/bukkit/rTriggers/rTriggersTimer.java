@@ -25,9 +25,7 @@ public class rTriggersTimer implements Runnable{
 	public void run() {
 		String sendMe = plugin.replaceLists(message);
 		
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,""};
-		sendMe = rParser.replaceWords(sendMe, replace, with);
+		message = rTriggers.stdReplace(message);
 
 		plugin.sendMessage(sendMe, triggerer, recipients);
 	}

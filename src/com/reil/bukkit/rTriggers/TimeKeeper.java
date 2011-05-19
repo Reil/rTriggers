@@ -33,10 +33,8 @@ public class TimeKeeper implements Runnable {
 			String recipients = split[0];
 			String sendMe = plugin.replaceLists(split[2]);
 			
-			String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-			String [] with    = {"\n§f"      , "§"         , "§"        ,""};
-			sendMe = rParser.replaceWords(sendMe, replace, with);
-
+			message = rTriggers.stdReplace(message);
+			
 			plugin.sendMessage(sendMe, null, recipients);
 		}
 	}

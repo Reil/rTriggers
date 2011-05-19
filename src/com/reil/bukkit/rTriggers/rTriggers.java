@@ -233,20 +233,18 @@ public class rTriggers extends JavaPlugin {
 			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
 			String [] split =  fullMessage.split(colonSplit, 3);
-			String message = split[2];
 			/**************************
 			 * Tag replacement start!
 			 *************************/
-			message = replaceLists(message);
+			String message = replaceLists(split[2]);
 			
 			// Regex's which catch @, but not \@ and &, but not \&
-			String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<placeholder>>"};
-			String [] with    = {"\n§f"      , "§"         , "§"        ,""};
-			message = rParser.replaceWords(message, replace, with);
 			
-			String [] replace2 = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
-			String [] with2    = getTagReplacements(triggerer);
-			message = rParser.replaceWords(message, replace2, with2);
+			message = stdReplace(message);
+			
+			String [] replace = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+			String [] with    = getTagReplacements(triggerer);
+			message = rParser.replaceWords(message, replace, with);
 			
 			if (eventToReplace.length > 0) {
 				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
@@ -277,6 +275,17 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		return !sendThese.isEmpty();
+	}
+	
+	/* Takes care of replacements that don't vary per player. */
+	public static String stdReplace(String message) {
+		Calendar time = Calendar.getInstance();
+		String minute = Integer.toString(time.get(Calendar.MINUTE));
+		String hour   = Integer.toString(time.get(Calendar.HOUR));
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<hour>>", "<<minute>>"};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute, hour     , minute};
+		message = rParser.replaceWords(message, replace, with);
+		return message;
 	}
 	
 	public Set<String> getMessages(Player triggerer, String option) {
