@@ -8,6 +8,7 @@ import java.util.logging.*;
 
 import org.bukkit.entity.*;
 import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.*;
 import org.bukkit.event.entity.*;
@@ -27,6 +28,7 @@ import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
 
 // Fake Player
+import net.minecraft.server.EntityLiving;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.ItemInWorldManager;
 import net.minecraft.server.NetServerHandler;
@@ -158,8 +160,6 @@ public class rTriggers extends JavaPlugin {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
 		generateTimers(Messages);
-		
-		// fakePlayer = makeFakePlayer("&rTriggers");
 		
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
@@ -527,7 +527,6 @@ public class rTriggers extends JavaPlugin {
 					players.add(addMe);
 					continue building_the_list;
 				}
-					
 			}
 		}
 		return players;
@@ -596,5 +595,19 @@ public class rTriggers extends JavaPlugin {
         fakePlayer.setDisplayName(Name);
         
         return fakePlayer;
+	}
+	
+	public static Entity getEntityById(int entityId, World world){
+	    net.minecraft.server.Entity ent = ((CraftWorld)world).getHandle().getEntity(entityId);
+	    if ((ent != null) && ((ent instanceof EntityLiving)))
+	        return ent.getBukkitEntity();
+	    else return null;
+	}
+	
+	public static String getName(Entity thisGuy){
+		if (thisGuy instanceof Player)
+			return ((Player)thisGuy).getName();
+		String targeterName = thisGuy.getClass().getName();
+		return targeterName.substring(targeterName.lastIndexOf("Craft") + "Craft".length());
 	}
 }

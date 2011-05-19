@@ -45,7 +45,8 @@ public class rTriggersEntityListener extends EntityListener{
 			String [] withThese = {deathBy};
 			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
 			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|natural" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|natural", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|natural|" + triggerOption, replaceThese, withThese);
 		}
 	}
 }
