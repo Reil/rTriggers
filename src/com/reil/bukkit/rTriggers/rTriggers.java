@@ -222,33 +222,9 @@ public class rTriggers extends JavaPlugin {
 	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
 	
 	public boolean triggerMessages(Player triggerer, String option, String[] eventToReplace, String[] eventReplaceWith){
-		if (!optionsMap.containsKey(option)) return false; 		// This option does not trigger anything
-		
-		/* Build list of groups */
-		List<String>groupArray = new LinkedList<String>();
-		if (triggerer != null){
-			/* Everyone has at least these two. */
-			groupArray.add("<<player|" + triggerer.getName() + ">>");
-			groupArray.add("<<everyone>>");
-			/* Add any groups the user's a member of. */
-			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerer.getWorld().getName(),triggerer.getName())));
-		} else groupArray.add("<<customtrigger>>");
-		
-		/* Build set of message candidates */
-		Set<String> sendThese = new LinkedHashSet<String>();
-		for (String groupName : groupArray)
-			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
-		if (PermissionsPlugin != null && triggerer != null){
-			for(String permission : permissionTriggerers){
-				if(PermissionsPlugin.has(triggerer, permission)) {
-					sendThese.addAll(Arrays.asList(Messages.getStrings("<<hasperm|" + permission + ">>")));
-				}
-			}
-		}
-		// Remove candidates that aren't for this option
-		sendThese.retainAll(optionsMap.get(option));
-		
 		/* Send all message candidates */
+		Set<String> sendThese = getMessages(triggerer, option);
+		
 		message_rollout:
 		for (String fullMessage : sendThese){	
 			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
@@ -290,6 +266,36 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		return !sendThese.isEmpty();
+	}
+	
+	public Set<String> getMessages(Player triggerer, String option) {
+		if (!optionsMap.containsKey(option)) return new HashSet<String>(); 		// This option does not trigger anything
+		
+		/* Build list of groups */
+		List<String> groupArray = new LinkedList<String>();
+		if (triggerer != null){
+			/* Everyone has at least these two. */
+			groupArray.add("<<player|" + triggerer.getName() + ">>");
+			groupArray.add("<<everyone>>");
+			/* Add any groups the user's a member of. */
+			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerer.getWorld().getName(),triggerer.getName())));
+		} else groupArray.add("<<customtrigger>>");
+		
+		/* Build set of message candidates */
+		Set<String> sendThese = new LinkedHashSet<String>();
+		for (String groupName : groupArray)
+			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
+		if (PermissionsPlugin != null && triggerer != null){
+			for(String permission : permissionTriggerers){
+				if(PermissionsPlugin.has(triggerer, permission)) {
+					sendThese.addAll(Arrays.asList(Messages.getStrings("<<hasperm|" + permission + ">>")));
+				}
+			}
+		}
+		
+		// Remove candidates that aren't for this option
+		sendThese.retainAll(optionsMap.get(option));
+		return sendThese;
 	}
 	
 	private boolean tooSoon(String message, Player triggerer) {
