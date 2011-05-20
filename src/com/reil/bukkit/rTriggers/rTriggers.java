@@ -62,6 +62,7 @@ public class rTriggers extends JavaPlugin {
 	public PermissionHandler PermissionsPlugin;
 	public Plugin ServerEventsPlugin;
     
+	TimeKeeper clock;
 	Map <String, Long> limitTracker = new HashMap<String, Long>();
     Map <String, Integer> listTracker = new HashMap<String,Integer>();
 	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
@@ -152,6 +153,7 @@ public class rTriggers extends JavaPlugin {
 		Console = new ConsoleCommandSender(MCServer);
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
+        clock = new TimeKeeper(this, bukkitScheduler, 0);
 
 		try {
 			grabPlugins(pluginManager);
@@ -163,6 +165,8 @@ public class rTriggers extends JavaPlugin {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
 		generateTimers(Messages);
+		
+		
 		
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
