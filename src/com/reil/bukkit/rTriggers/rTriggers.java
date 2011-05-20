@@ -246,7 +246,7 @@ public class rTriggers extends JavaPlugin {
 			
 			message = stdReplace(message);
 			
-			String [] replace = { "<<triggerer>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
 			String [] with    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace, with);
 			
@@ -411,7 +411,7 @@ public class rTriggers extends JavaPlugin {
 	 * Use in conjunction with rParser.replaceWords or rParser.parseMessage;
 	 * @param player A player to get the replacements for
 	 * @return Array of things to replace tags in this order:
-	 *         Name, IP address, locale, country, iConomy balance
+	 *         Name, Display Name, IP address, locale, country, iConomy balance
 	 */
 	public String[] getTagReplacements(Player player){
 		if (player == null || player.getName().equals("&rTriggers")){
@@ -435,7 +435,7 @@ public class rTriggers extends JavaPlugin {
 			country = ""; 
 			locale = "";
 		}
-		String [] returnArray = { player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
+		String [] returnArray = { player.getName(), player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
 		return returnArray;
 	}
 
@@ -456,7 +456,7 @@ public class rTriggers extends JavaPlugin {
 	 * @param triggerer The player that triggered this message (can be null, if no triggerer)
 	 */
 	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
-		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
+		String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 		
 		Set <String> sendToGroupsFiltered     = new HashSet <String>();
 		Set <String> dontSendToGroupsFiltered = new HashSet <String>();
