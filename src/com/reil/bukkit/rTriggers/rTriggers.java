@@ -435,7 +435,7 @@ public class rTriggers extends JavaPlugin {
 			country = ""; 
 			locale = "";
 		}
-		String [] returnArray = { player.getName(), IP.toString(), locale, country, Double.toString(balance)};
+		String [] returnArray = { player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
 		return returnArray;
 	}
 
