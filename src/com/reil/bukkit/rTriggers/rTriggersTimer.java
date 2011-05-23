@@ -23,7 +23,7 @@ public class rTriggersTimer implements Runnable{
 	public void run() {
 		String sendMe = plugin.replaceLists(message);
 		
-		message = rTriggers.stdReplace(message);
+		sendMe = rTriggers.stdReplace(sendMe);
 
 		plugin.sendMessage(sendMe, triggerer, recipients);
 	}
