@@ -143,7 +143,6 @@ public class rTriggers extends JavaPlugin {
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
 				optionsMap.get(option).add(message);
 			}
-			return largestDelay;
 		}
 		
 		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
