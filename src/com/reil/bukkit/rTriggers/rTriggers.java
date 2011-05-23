@@ -6,6 +6,8 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.logging.*;
 
+import javax.persistence.PersistenceException;
+
 import org.bukkit.entity.*;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -27,6 +29,8 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
+import com.reil.bukkit.rTriggers.persistence.LimitTracker;
+import com.reil.bukkit.rTriggers.persistence.TriggerLimit;
 
 // Fake Player
 import net.minecraft.server.EntityLiving;
@@ -49,8 +53,8 @@ public class rTriggers extends JavaPlugin {
 	public Random RNG;
 	public Logger log;
 	
-	String commaSplit = "[ \t]*,[ \t]*";
-	String colonSplit = "[ \t]*:[ \t]*";
+	public static String commaSplit = "[ \t]*,[ \t]*";
+	public static String colonSplit = "[ \t]*:[ \t]*";
 	
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
@@ -63,19 +67,20 @@ public class rTriggers extends JavaPlugin {
 	public Plugin ServerEventsPlugin;
     
 	TimeKeeper clock;
-	Map <String, Long> limitTracker = new HashMap<String, Long>();
+	LimitTracker limitTracker;
     Map <String, Integer> listTracker = new HashMap<String,Integer>();
 	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
 	Map <Integer, Player> deathBringer = new HashMap <Integer, Player>();
-	Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
+	public Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
 	List<String> permissionTriggerers = new LinkedList<String>();
 
     /**
      * Goes through each message in messages[] and registers events that it sees in each.
      * @param messages
      */
-	public void processOptions(String[] messages){
-		if (registered) return;
+	public int processOptions(String[] messages){
+		int largestDelay = 0;
+		if (registered) return 0;
 		else registered = true;
 		
 		boolean [] flag = new boolean[7];
@@ -131,16 +136,20 @@ public class rTriggers extends JavaPlugin {
 					if (option.endsWith("perTrigger")) option = "limit|perTrigger";
 					else option = "limit";
 				} else if (option.startsWith("delay|")) {
+					int delayTime = Integer.parseInt(option.substring(6));
+					if (delayTime > largestDelay) largestDelay = delayTime;
 					option = "delay";
 				}
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
 				optionsMap.get(option).add(message);
 			}
+			return largestDelay;
 		}
 		
 		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
+		return largestDelay;
 	} 
 	
 	public void onEnable(){
@@ -154,19 +163,24 @@ public class rTriggers extends JavaPlugin {
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
         clock = new TimeKeeper(this, bukkitScheduler, 0);
+        limitTracker = new LimitTracker(this);
 
+        int largestDelay = 0;
 		try {
 			grabPlugins(pluginManager);
-			processOptions(Messages.load());
+			largestDelay = processOptions(Messages.load());
 			for (String key : Messages.getKeys()){
-				if (key.startsWith("<<hasperm|")) permissionTriggerers.add(key.substring(10,key.length() - 2));
+				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.indexOf("|") + 1,key.length() - 2));
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
 		generateTimers(Messages);
-		
-		
+		if (optionsMap.containsKey("delay")) {
+			setupDatabase();
+			limitTracker.cleanEntriesOlderThan(largestDelay);
+			log.info("[rTriggers] Cleaned " + largestDelay + " entries from delay persistence table");
+		}
 		
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
@@ -234,7 +248,7 @@ public class rTriggers extends JavaPlugin {
 		
 		message_rollout:
 		for (String fullMessage : sendThese){	
-			if (tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
+			if (limitTracker.tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
 			String [] split =  fullMessage.split(colonSplit, 3);
 			/**************************
@@ -311,8 +325,11 @@ public class rTriggers extends JavaPlugin {
 			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
 		if (PermissionsPlugin != null && triggerer != null){
 			for(String permission : permissionTriggerers){
+				String permString = "<<hasperm|" + permission + ">>";
 				if(PermissionsPlugin.has(triggerer, permission)) {
-					sendThese.addAll(Arrays.asList(Messages.getStrings("<<hasperm|" + permission + ">>")));
+					if (Messages.keyExists(permString)) sendThese.addAll(Arrays.asList(Messages.getStrings(permString)));
+				} else {
+					if (Messages.keyExists("not|" + permString)) sendThese.addAll(Arrays.asList(Messages.getStrings("not|" + permString)));
 				}
 			}
 		}
@@ -320,50 +337,6 @@ public class rTriggers extends JavaPlugin {
 		// Remove candidates that aren't for this option
 		sendThese.retainAll(optionsMap.get(option));
 		return sendThese;
-	}
-	
-	private boolean tooSoon(String message, Player triggerer) {
-		if (optionsMap.containsKey("limit") && optionsMap.get("limit").contains(message)){
-			long currentTime = System.currentTimeMillis();
-			if (!limitTracker.containsKey(message)){
-				limitTracker.put(message, currentTime);
-				return false;
-			}
-			
-			long lastTime = limitTracker.get(message);
-			// Find minimum wait time
-			long delay = 0;
-			for(String checkOption : message.split(colonSplit)[1].split(commaSplit)) {
-				if (checkOption.startsWith("limit|")) {
-					delay = 1000 * new Long(checkOption.substring(6));
-					break;
-				}
-			}			
-			if (currentTime - lastTime > delay) limitTracker.put(message, currentTime);
-			else return true;
-		} else if (triggerer != null &&
-				optionsMap.containsKey("limit|pertriggerer")&& 
-				optionsMap.get("limit|pertriggerer").contains(message)) {
-			long currentTime = System.currentTimeMillis();
-			message = triggerer.getName() + message;
-			if (!limitTracker.containsKey(message)){
-				limitTracker.put(message, currentTime);
-				return false;
-			}
-			
-			long lastTime = limitTracker.get(message);
-			// Find minimum wait time
-			long delay = 0;
-			for(String checkOption : message.split(colonSplit)[1].split(commaSplit)) {
-				if (checkOption.startsWith("limit|")) {
-					delay = 1000 * new Long(checkOption.substring(6));
-					break;
-				}
-			}			
-			if (currentTime - lastTime > delay) limitTracker.put(message, currentTime);
-			else return true;
-		}
-		return false;
 	}
 
 	/*
@@ -415,7 +388,7 @@ public class rTriggers extends JavaPlugin {
 	 */
 	public String[] getTagReplacements(Player player){
 		if (player == null || player.getName().equals("&rTriggers")){
-			String [] returnArray = {"", "", "", "", ""};
+			String [] returnArray = {"", "", "", "", "", ""};
 			return returnArray;
 		}
 		// Get balance tag
@@ -439,23 +412,14 @@ public class rTriggers extends JavaPlugin {
 		return returnArray;
 	}
 
-	public void sendMessage(String message, Player triggerMessage, String Groups){
+	public void sendMessage(String message, Player triggerer, String groups){
 		/* Default: Send to player unless other groups are specified.
 		 * If so, send to those instead. */
-		if (Groups.isEmpty() || Groups.equalsIgnoreCase("<<triggerer>>"))
-			sendToPlayer(message, triggerMessage, false, false);
-		else
-			sendToGroups(Groups.split(commaSplit), message, triggerMessage);
-	}
-
-	/**
-	 * Takes care of 'psuedo-groups' like <<triggerer>>, <<server>>, and <<everyone>>,
-	 * then sends to the rest of the normal groups.
-	 * @param sendToGroups An array of groups and pseudo-groups to send this message to
-	 * @param message The message you want to send
-	 * @param triggerer The player that triggered this message (can be null, if no triggerer)
-	 */
-	public void sendToGroups (String [] sendToGroups, String message, Player triggerer) {
+		if (groups.isEmpty() || groups.equalsIgnoreCase("<<triggerer>>")) {
+			sendToPlayer(message, triggerer, false, false);
+			return;
+		}
+		
 		String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 		
 		Set <String> sendToGroupsFiltered     = new HashSet <String>();
@@ -474,16 +438,16 @@ public class rTriggers extends JavaPlugin {
 		 * Begin:
 		 * 1) Constructing list of groups to send to
 		 * 2) Processing 'special' groups (ones in double-chevrons) */
-		for (String group : sendToGroups){
+		for (String group : groups.split(commaSplit)){
 			if (group.startsWith("not|")){
 				String notTarget = group.substring(4);
 				if (!notTarget.startsWith("<<")) dontSendToGroupsFiltered.add(notTarget);
 				else if (notTarget.equalsIgnoreCase("<<triggerer>>")) dontSendToUs.add(triggerer);
 				else if (notTarget.startsWith("<<player|")){
-					String playerName = group.substring(9, group.length()-2);
+					String playerName = notTarget.substring(9, notTarget.length()-2);
 					Player putMe = MCServer.getPlayer(playerName);
 					if (putMe != null) dontSendToUs.add(putMe);
-				}
+				} else if(notTarget.startsWith("<<hasperm|")) dontSendToPermissions.add(notTarget.substring(10, notTarget.length() - 2));
 			}
 			else if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
 			/* Special cases: start! */
@@ -494,13 +458,14 @@ public class rTriggers extends JavaPlugin {
 			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
 			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
 			else if (group.equalsIgnoreCase("<<player|&rTriggers>>")) sendToUs.add(makeFakePlayer("&rTriggers", triggerer));
+			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
 			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
 				for(String command : message.split("\n")) MCServer.dispatchCommand(Console, command.replaceAll("§.", ""));
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
 				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
-				String [] with    = {"server", "", "", "", "§"};
+				String [] with    = {"server", "", "", "", "§", "",};
 				log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
 			}
 			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
@@ -640,4 +605,18 @@ public class rTriggers extends JavaPlugin {
 		String targeterName = thisGuy.getClass().getName();
 		return targeterName.substring(targeterName.lastIndexOf("Craft") + "Craft".length());
 	}
+	private void setupDatabase() {
+        try {
+            getDatabase().find(TriggerLimit.class).findRowCount();
+        } catch (PersistenceException ex) {
+            System.out.println("[rTriggers] Setting up persistence...");
+            installDDL();
+        }
+    }
+   @Override
+    public List<Class<?>> getDatabaseClasses() {
+        List<Class<?>> list = new ArrayList<Class<?>>();
+        list.add(TriggerLimit.class);
+        return list;
+    }
 }
