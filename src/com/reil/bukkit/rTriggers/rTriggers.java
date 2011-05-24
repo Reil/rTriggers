@@ -475,7 +475,7 @@ public class rTriggers extends JavaPlugin {
 				log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
 			}
 			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
-				int distance = new Integer(group.substring(16, group.length() - 2));
+				int distance = new Integer(group.substring(17, group.length() - 2));
 				for (Entity addMe : triggerer.getNearbyEntities(distance, distance, 127))
 					if (addMe instanceof Player) sendToUs.add((Player) addMe);
 			}
