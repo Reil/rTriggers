@@ -3,6 +3,8 @@ package com.reil.bukkit.rTriggers;
 import java.awt.print.Paper;
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.*;
 
@@ -52,6 +54,7 @@ public class rTriggers extends JavaPlugin {
 	public Server MCServer;
 	public Random RNG;
 	public Logger log;
+	private static TimeZone timeZone;
 	
 	public static String commaSplit = "[ \t]*,[ \t]*";
 	public static String colonSplit = "[ \t]*:[ \t]*";
@@ -180,6 +183,9 @@ public class rTriggers extends JavaPlugin {
 			limitTracker.cleanEntriesOlderThan(largestDelay);
 			log.info("[rTriggers] Cleaned " + largestDelay + " entries from delay persistence table");
 		}
+		if (Messages.keyExists("s:timezone")){
+			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
+		} else timeZone = TimeZone.getDefault();
 		
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
@@ -296,11 +302,12 @@ public class rTriggers extends JavaPlugin {
 	
 	/* Takes care of replacements that don't vary per player. */
 	public static String stdReplace(String message) {
-		Calendar time = Calendar.getInstance();
-		String minute = Integer.toString(time.get(Calendar.MINUTE));
+		Calendar time = Calendar.getInstance(timeZone);
+		String minute = String.format("%2d", time.get(Calendar.MINUTE));
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<hour>>", "<<minute>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute, hour     , minute};
+		String hour24 = String.format("%2d", time.get(Calendar.HOUR_OF_DAY));
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time|24>>"        ,"<<hour>>", "<<minute>>"};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
 		message = rParser.replaceWords(message, replace, with);
 		return message;
 	}

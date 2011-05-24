@@ -99,7 +99,7 @@ public class rPropertiesFile {
 		return true;
 	}
 	int	getInt(java.lang.String key){
-		return 0;
+		return Integer.parseInt(Properties.get(key).get(0).trim());
 	}
 	int	getInt(java.lang.String key, int value){
 		return 0;
