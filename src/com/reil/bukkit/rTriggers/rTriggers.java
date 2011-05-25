@@ -498,7 +498,7 @@ public class rTriggers extends JavaPlugin {
 		String minute = String.format("%2d", time.get(Calendar.MINUTE));
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
 		String hour24 = String.format("%2d", time.get(Calendar.HOUR_OF_DAY));
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time|24>>"        ,"<<hour>>", "<<minute>>"};
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>"};
 		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
 		message = rParser.replaceWords(message, replace, with);
 		return message;
