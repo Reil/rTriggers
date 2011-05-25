@@ -14,6 +14,7 @@ import org.bukkit.entity.*;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.event.Event;
+import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
@@ -77,10 +78,54 @@ public class rTriggers extends JavaPlugin {
 	public Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
 	List<String> permissionTriggerers = new LinkedList<String>();
 
-    /**
-     * Goes through each message in messages[] and registers events that it sees in each.
-     * @param messages
-     */
+	/*
+	 * START: Functions for setting up the plugin here 
+	 */
+	
+	
+    public void onEnable(){
+		economyMethods = new Methods();
+		log = Logger.getLogger("Minecraft");
+		RNG = new Random();
+		MCServer = getServer();
+		bukkitScheduler = MCServer.getScheduler();
+		pluginManager = MCServer.getPluginManager();
+		Console = new ConsoleCommandSender(MCServer);
+		getDataFolder().mkdir();
+        Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
+        clock = new TimeKeeper(this, bukkitScheduler, 0);
+        limitTracker = new LimitTracker(this);
+
+        int largestDelay = 0;
+		try {
+			grabPlugins(pluginManager);
+			largestDelay = processOptions(Messages.load());
+			for (String key : Messages.getKeys()){
+				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.indexOf("|") + 1,key.length() - 2));
+			}
+		} catch (Exception e) {
+			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
+		}
+		generateTimers(Messages);
+		if (optionsMap.containsKey("delay")) {
+			setupDatabase();
+			limitTracker.cleanEntriesOlderThan(largestDelay);
+			log.info("[rTriggers] Cleaned " + largestDelay + " entries from delay persistence table");
+		}
+		if (Messages.keyExists("s:timezone")){
+			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
+		} else timeZone = TimeZone.getDefault();
+		
+		// Do onload events for everything that might have loaded before rTriggers
+		serverListener.checkAlreadyLoaded(pluginManager);
+		
+		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
+	}
+	
+	/**
+	 * Goes through each message in messages[] and registers events that it sees in each.
+	 * @param messages
+	 */
 	public int processOptions(String[] messages){
 		int largestDelay = 0;
 		if (registered) return 0;
@@ -152,47 +197,8 @@ public class rTriggers extends JavaPlugin {
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
 		return largestDelay;
-	} 
-	
-	public void onEnable(){
-		economyMethods = new Methods();
-		log = Logger.getLogger("Minecraft");
-		RNG = new Random();
-		MCServer = getServer();
-		bukkitScheduler = MCServer.getScheduler();
-		pluginManager = MCServer.getPluginManager();
-		Console = new ConsoleCommandSender(MCServer);
-		getDataFolder().mkdir();
-        Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
-        clock = new TimeKeeper(this, bukkitScheduler, 0);
-        limitTracker = new LimitTracker(this);
-
-        int largestDelay = 0;
-		try {
-			grabPlugins(pluginManager);
-			largestDelay = processOptions(Messages.load());
-			for (String key : Messages.getKeys()){
-				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.indexOf("|") + 1,key.length() - 2));
-			}
-		} catch (Exception e) {
-			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
-		}
-		generateTimers(Messages);
-		if (optionsMap.containsKey("delay")) {
-			setupDatabase();
-			limitTracker.cleanEntriesOlderThan(largestDelay);
-			log.info("[rTriggers] Cleaned " + largestDelay + " entries from delay persistence table");
-		}
-		if (Messages.keyExists("s:timezone")){
-			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
-		} else timeZone = TimeZone.getDefault();
-		
-		// Do onload events for everything that might have loaded before rTriggers
-		serverListener.checkAlreadyLoaded(pluginManager);
-		
-		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
 	}
-	
+
 	/**
 	 *  Checks to see if plugins which rTriggers supports have already been loaded.
 	 *  Registers rTriggers with already-loaded plugins it finds.
@@ -232,12 +238,32 @@ public class rTriggers extends JavaPlugin {
 		if (messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
 	}
 	
+	private void setupDatabase() {
+        try {
+            getDatabase().find(TriggerLimit.class).findRowCount();
+        } catch (PersistenceException ex) {
+            System.out.println("[rTriggers] Setting up persistence...");
+            installDDL();
+        }
+    }
+   @Override
+    public List<Class<?>> getDatabaseClasses() {
+        List<Class<?>> list = new ArrayList<Class<?>>();
+        list.add(TriggerLimit.class);
+        return list;
+    }
+	
 	@Override
 	public void onDisable(){
 		Messages.save();
 		bukkitScheduler.cancelTasks(this);
 		log.info("[rTriggers] Disabled!");
 	} 
+	
+	
+	/*
+	 * Start: Functions for triggering/sending/dispatching messages
+	 */
 	
 	
 	/* Looks through all of the messages,
@@ -300,18 +326,6 @@ public class rTriggers extends JavaPlugin {
 		return !sendThese.isEmpty();
 	}
 	
-	/* Takes care of replacements that don't vary per player. */
-	public static String stdReplace(String message) {
-		Calendar time = Calendar.getInstance(timeZone);
-		String minute = String.format("%2d", time.get(Calendar.MINUTE));
-		String hour   = Integer.toString(time.get(Calendar.HOUR));
-		String hour24 = String.format("%2d", time.get(Calendar.HOUR_OF_DAY));
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time|24>>"        ,"<<hour>>", "<<minute>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
-		message = rParser.replaceWords(message, replace, with);
-		return message;
-	}
-	
 	public Set<String> getMessages(Player triggerer, String option) {
 		if (!optionsMap.containsKey(option)) return new HashSet<String>(); 		// This option does not trigger anything
 		
@@ -343,79 +357,6 @@ public class rTriggers extends JavaPlugin {
 		// Remove candidates that aren't for this option
 		sendThese.retainAll(optionsMap.get(option));
 		return sendThese;
-	}
-
-	/*
-	 * Will replace user-generated lists, as well as the player list.
-	 */
-	public String replaceLists(String message) {
-		int optionStart;
-		int optionEnd;
-		String listMember;
-		
-		// Replace user-generated lists:
-		while ( (optionStart = message.indexOf("<<list|") + 7)     !=  6 &&
-				(optionEnd   = message.indexOf(">>", optionStart)) != -1){
-			String options = message.substring(optionStart, optionEnd);
-			String [] optionSplit = options.split("\\|");
-			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
-			
-			if (messageList.length > 0){
-				if (!(optionSplit.length > 1) || !optionSplit[1].equalsIgnoreCase("rand")){
-					if(!listTracker.containsKey(optionSplit[0]))
-						listTracker.put(optionSplit[0], 0);
-					int listNumber = listTracker.get(optionSplit[0]);
-					listMember = messageList[listNumber];
-					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
-				} else listMember = messageList[RNG.nextInt(messageList.length)];
-			} else listMember = "";
-			message = message.replace("<<list|" + options + ">>", listMember);
-		}
-		
-		// Now replace any use of <<player-list>>
-		if(message.contains("<<player-list>>")){
-			StringBuilder list = new StringBuilder();
-			String prefix = "";
-			
-			for (Player getName : MCServer.getOnlinePlayers()){
-				list.append(prefix + getName.getDisplayName());
-				prefix = ", ";
-			}
-			message = message.replaceAll("<<player-list>>", list.toString());
-		}
-		
-		return message;
-	}
-	/**
-	 * Use in conjunction with rParser.replaceWords or rParser.parseMessage;
-	 * @param player A player to get the replacements for
-	 * @return Array of things to replace tags in this order:
-	 *         Name, Display Name, IP address, locale, country, iConomy balance
-	 */
-	public String[] getTagReplacements(Player player){
-		if (player == null || player.getName().equals("&rTriggers")){
-			String [] returnArray = {"", "", "", "", "", ""};
-			return returnArray;
-		}
-		// Get balance tag
-		double balance = 0;
-		if (economyPlugin != null && economyPlugin.hasAccount(player.getName()))
-			balance = economyPlugin.getAccount(player.getName()).balance();
-		
-		// Get ip and locale tags
-		InetSocketAddress IP = player.getAddress();
-		String country;
-		String locale;
-		try {
-			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(IP.getAddress());
-			country = playersHere.getDisplayCountry();
-			locale = playersHere.getDisplayName();
-		} catch (Exception e){
-			country = ""; 
-			locale = "";
-		}
-		String [] returnArray = { player.getName(), player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
-		return returnArray;
 	}
 
 	public void sendMessage(String message, Player triggerer, String groups){
@@ -546,6 +487,95 @@ public class rTriggers extends JavaPlugin {
 		if (flagCommand &&  recipient.getName().equals("&rTriggers"))
 			for(String command : message.split("\n")) recipient.chat("/" + command.replaceAll("§.", ""));
 	}
+
+	/*
+	 * Start: Functions for formatting messages
+	 */
+	
+	/* Takes care of replacements that don't vary per player. */
+	public static String stdReplace(String message) {
+		Calendar time = Calendar.getInstance(timeZone);
+		String minute = String.format("%2d", time.get(Calendar.MINUTE));
+		String hour   = Integer.toString(time.get(Calendar.HOUR));
+		String hour24 = String.format("%2d", time.get(Calendar.HOUR_OF_DAY));
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time|24>>"        ,"<<hour>>", "<<minute>>"};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
+		message = rParser.replaceWords(message, replace, with);
+		return message;
+	}
+
+	/*
+	 * Will replace user-generated lists, as well as the player list.
+	 */
+	public String replaceLists(String message) {
+		int optionStart;
+		int optionEnd;
+		String listMember;
+		
+		// Replace user-generated lists:
+		while ( (optionStart = message.indexOf("<<list|") + 7)     !=  6 &&
+				(optionEnd   = message.indexOf(">>", optionStart)) != -1){
+			String options = message.substring(optionStart, optionEnd);
+			String [] optionSplit = options.split("\\|");
+			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
+			
+			if (messageList.length > 0){
+				if (!(optionSplit.length > 1) || !optionSplit[1].equalsIgnoreCase("rand")){
+					if(!listTracker.containsKey(optionSplit[0]))
+						listTracker.put(optionSplit[0], 0);
+					int listNumber = listTracker.get(optionSplit[0]);
+					listMember = messageList[listNumber];
+					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
+				} else listMember = messageList[RNG.nextInt(messageList.length)];
+			} else listMember = "";
+			message = message.replace("<<list|" + options + ">>", listMember);
+		}
+		
+		// Now replace any use of <<player-list>>
+		if(message.contains("<<player-list>>")){
+			StringBuilder list = new StringBuilder();
+			String prefix = "";
+			
+			for (Player getName : MCServer.getOnlinePlayers()){
+				list.append(prefix + getName.getDisplayName());
+				prefix = ", ";
+			}
+			message = message.replaceAll("<<player-list>>", list.toString());
+		}
+		
+		return message;
+	}
+	/**
+	 * Use in conjunction with rParser.replaceWords or rParser.parseMessage;
+	 * @param player A player to get the replacements for
+	 * @return Array of things to replace tags in this order:
+	 *         Name, Display Name, IP address, locale, country, iConomy balance
+	 */
+	public String[] getTagReplacements(Player player){
+		if (player == null || player.getName().equals("&rTriggers")){
+			String [] returnArray = {"", "", "", "", "", ""};
+			return returnArray;
+		}
+		// Get balance tag
+		double balance = 0;
+		if (economyPlugin != null && economyPlugin.hasAccount(player.getName()))
+			balance = economyPlugin.getAccount(player.getName()).balance();
+		
+		// Get ip and locale tags
+		InetSocketAddress IP = player.getAddress();
+		String country;
+		String locale;
+		try {
+			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(IP.getAddress());
+			country = playersHere.getDisplayCountry();
+			locale = playersHere.getDisplayName();
+		} catch (Exception e){
+			country = ""; 
+			locale = "";
+		}
+		String [] returnArray = { player.getName(), player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
+		return returnArray;
+	}
 	
 	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){
 		switch (causeOfDeath) {
@@ -611,18 +641,4 @@ public class rTriggers extends JavaPlugin {
 		String targeterName = thisGuy.getClass().getName();
 		return targeterName.substring(targeterName.lastIndexOf("Craft") + "Craft".length());
 	}
-	private void setupDatabase() {
-        try {
-            getDatabase().find(TriggerLimit.class).findRowCount();
-        } catch (PersistenceException ex) {
-            System.out.println("[rTriggers] Setting up persistence...");
-            installDDL();
-        }
-    }
-   @Override
-    public List<Class<?>> getDatabaseClasses() {
-        List<Class<?>> list = new ArrayList<Class<?>>();
-        list.add(TriggerLimit.class);
-        return list;
-    }
 }
