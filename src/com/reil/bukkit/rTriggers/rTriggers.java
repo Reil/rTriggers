@@ -14,7 +14,6 @@ import org.bukkit.entity.*;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
@@ -126,7 +125,7 @@ public class rTriggers extends JavaPlugin {
 	 * @param messages
 	 */
 	public int processOptions(String[] messages){
-		int largestDelay = 0;
+		int largestLimit = 0;
 		if (registered) return 0;
 		else registered = true;
 		
@@ -180,11 +179,13 @@ public class rTriggers extends JavaPlugin {
 			if (options.isEmpty()) options = "onlogin";
 			for(String option : options.split(commaSplit)){
 				if(option.startsWith("limit|")){
+					int indexEnd = option.lastIndexOf('|');
+					if (indexEnd == 5) indexEnd = option.length();
+					int limitTime = Integer.parseInt(option.substring(6, indexEnd));
+					if (limitTime > largestLimit) largestLimit = limitTime;
 					if (option.endsWith("perTrigger")) option = "limit|perTrigger";
 					else option = "limit";
 				} else if (option.startsWith("delay|")) {
-					int delayTime = Integer.parseInt(option.substring(6));
-					if (delayTime > largestDelay) largestDelay = delayTime;
 					option = "delay";
 				}
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
@@ -195,7 +196,7 @@ public class rTriggers extends JavaPlugin {
 		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
-		return largestDelay * 1000;
+		return largestLimit * 1000;
 	}
 
 	/**
