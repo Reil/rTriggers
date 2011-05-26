@@ -46,7 +46,9 @@ public class LimitTracker {
 		long delay = 0;
 		for(String checkOption : message.split(rTriggers.colonSplit)[1].split(rTriggers.commaSplit)) {
 			if (checkOption.startsWith("limit|")) {
-				delay = 1000 * new Long(checkOption.substring(6));
+				int indexEnd = checkOption.lastIndexOf('|');
+				if (indexEnd == 5) indexEnd = checkOption.length();
+				delay = 1000 * new Long(checkOption.substring(6, indexEnd));
 				break;
 			}
 		}			
