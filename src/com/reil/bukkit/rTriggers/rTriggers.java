@@ -109,8 +109,7 @@ public class rTriggers extends JavaPlugin {
 		generateTimers(Messages);
 		if (optionsMap.containsKey("delay")) {
 			setupDatabase();
-			limitTracker.cleanEntriesOlderThan(largestDelay);
-			log.info("[rTriggers] Cleaned " + largestDelay + " entries from delay persistence table");
+			log.info("[rTriggers] Cleaned " + limitTracker.cleanEntriesOlderThan(largestDelay) + " entries from delay persistence table");
 		}
 		if (Messages.keyExists("s:timezone")){
 			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
@@ -196,7 +195,7 @@ public class rTriggers extends JavaPlugin {
 		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
 		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
 		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
-		return largestDelay;
+		return largestDelay * 1000;
 	}
 
 	/**

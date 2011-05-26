@@ -61,6 +61,6 @@ public class LimitTracker {
 		long beforeThis = System.currentTimeMillis() - milliseconds;
 		List<TriggerLimit> old = database.find(TriggerLimit.class).where().lt("time", beforeThis).findList();
 		database.delete(old);
-		return 0;
+		return old.size();
 	}
 }
