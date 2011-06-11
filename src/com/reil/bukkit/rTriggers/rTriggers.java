@@ -83,7 +83,6 @@ public class rTriggers extends JavaPlugin {
 	
 	
     public void onEnable(){
-		economyMethods = new Methods();
 		log = Logger.getLogger("Minecraft");
 		RNG = new Random();
 		MCServer = getServer();
@@ -114,6 +113,8 @@ public class rTriggers extends JavaPlugin {
 			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
 		} else timeZone = TimeZone.getDefault();
 		
+		if (Messages.keyExists("s:economy")) economyMethods = new Methods(Messages.getString("s:economy").trim());
+		else economyMethods = new Methods();
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
 		
@@ -129,7 +130,7 @@ public class rTriggers extends JavaPlugin {
 		if (registered) return 0;
 		else registered = true;
 		
-		boolean [] flag = new boolean[7];
+		boolean [] flag = new boolean[9];
 		Arrays.fill(flag, false);
 		PluginManager manager = MCServer.getPluginManager();
 		
@@ -166,6 +167,14 @@ public class rTriggers extends JavaPlugin {
 			if(!flag[6] && options.contains("onrespawn")){
 				manager.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Monitor, this);
 				flag[6] = true;
+			}
+			if(!flag[7] && options.contains("onbedenter")){
+				manager.registerEvent(Event.Type.PLAYER_BED_ENTER, playerListener, Priority.Monitor, this);
+				flag[7] = true;
+			}
+			if(!flag[8] && options.contains("onbedleave")){
+				manager.registerEvent(Event.Type.PLAYER_BED_LEAVE, playerListener, Priority.Monitor, this);
+				flag[8] = true;
 			}
 			if(options.contains("onload")){
 				for (String option: options.split(commaSplit)){
@@ -379,6 +388,8 @@ public class rTriggers extends JavaPlugin {
 		Set <Player> dontSendToUs = new HashSet<Player>();
 		dontSendToUs.add(null);
 		
+		World onlyHere = null;
+		
 		boolean flagCommand  = false;
 		boolean flagSay      = false;
 		/*************************************
@@ -394,7 +405,9 @@ public class rTriggers extends JavaPlugin {
 					String playerName = notTarget.substring(9, notTarget.length()-2);
 					Player putMe = MCServer.getPlayer(playerName);
 					if (putMe != null) dontSendToUs.add(putMe);
-				} else if(notTarget.startsWith("<<hasperm|")) dontSendToPermissions.add(notTarget.substring(10, notTarget.length() - 2));
+				}
+				else if(notTarget.startsWith("<<hasperm|")) dontSendToPermissions.add(notTarget.substring(10, notTarget.length() - 2));
+				else if(notTarget.startsWith("<<inworld|")) dontSendToUs.addAll(MCServer.getWorld(notTarget.substring(10, group.length() - 2)).getPlayers());
 			}
 			else if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
 			/* Special cases: start! */
@@ -404,7 +417,7 @@ public class rTriggers extends JavaPlugin {
 			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
 			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
 			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
-			else if (group.equalsIgnoreCase("<<player|&rTriggers>>")) sendToUs.add(makeFakePlayer("&rTriggers", triggerer));
+			else if (group.equalsIgnoreCase("<<player|rTriggersPlayer>>")) sendToUs.add(makeFakePlayer("rTriggersPlayer", triggerer));
 			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
 			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
@@ -415,6 +428,8 @@ public class rTriggers extends JavaPlugin {
 				String [] with    = {"server", "", "", "", "§", "",};
 				log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
 			}
+			else if (group.startsWith("<<onlyinworld|")) onlyHere = MCServer.getWorld(group.substring(14, group.length() - 2));
+			else if (group.startsWith("<<inworld|")) sendToUs.addAll(MCServer.getWorld(group.substring(10, group.length() - 2)).getPlayers());
 			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
 				int distance = new Integer(group.substring(17, group.length() - 2));
 				for (Entity addMe : triggerer.getNearbyEntities(distance, distance, 127))
@@ -443,6 +458,8 @@ public class rTriggers extends JavaPlugin {
 		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
 		sendToUs     = constructPlayerList(sendToGroupsFiltered    , sendToPermissions    , sendToUs);
 		sendToUs.removeAll(dontSendToUs);
+		
+		if (onlyHere != null) sendToUs.retainAll(onlyHere.getPlayers());
 		
 		for (Player sendToMe : sendToUs) sendToPlayer(message, sendToMe, flagCommand, flagSay);
 	}
@@ -482,10 +499,8 @@ public class rTriggers extends JavaPlugin {
 			for(String sayThis : message.split("\n")) recipient.chat(sayThis);
 		if (!flagCommand && !flagSay)
 			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
-		if (flagCommand && !recipient.getName().equals("&rTriggers"))
-			for(String command : message.split("\n")) recipient.performCommand(command.replaceAll("§.", ""));
-		if (flagCommand &&  recipient.getName().equals("&rTriggers"))
-			for(String command : message.split("\n")) recipient.chat("/" + command.replaceAll("§.", ""));
+		if (flagCommand)
+			for(String command : message.replaceAll("§.", "").split("\n")) MCServer.dispatchCommand(recipient, command); 
 	}
 
 	/*
@@ -495,9 +510,9 @@ public class rTriggers extends JavaPlugin {
 	/* Takes care of replacements that don't vary per player. */
 	public static String stdReplace(String message) {
 		Calendar time = Calendar.getInstance(timeZone);
-		String minute = String.format("%2d", time.get(Calendar.MINUTE));
+		String minute = String.format("%tM", time);
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
-		String hour24 = String.format("%2d", time.get(Calendar.HOUR_OF_DAY));
+		String hour24 = String.format("%tH", time);
 		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>"};
 		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
 		message = rParser.replaceWords(message, replace, with);
@@ -532,15 +547,27 @@ public class rTriggers extends JavaPlugin {
 		}
 		
 		// Now replace any use of <<player-list>>
-		if(message.contains("<<player-list>>")){
+		if(message.contains("<<player-list>>") || message.contains("<<sleep-list>>") || message.contains("<<nosleep-list")){
 			StringBuilder list = new StringBuilder();
-			String prefix = "";
+			StringBuilder sleepList = new StringBuilder();
+			StringBuilder notSleepList = new StringBuilder();
+			String prefix = "", sleepPrefix = "", notSleepPrefix = "";
 			
 			for (Player getName : MCServer.getOnlinePlayers()){
-				list.append(prefix + getName.getDisplayName());
+				String name = getName.getDisplayName();
+				list.append(prefix + name);
 				prefix = ", ";
+				if (getName.isSleeping()){
+					sleepList.append(sleepPrefix + name);
+					sleepPrefix = ", ";
+				} else {
+					notSleepList.append(sleepPrefix + name);
+					notSleepPrefix = ", ";
+				}
 			}
-			message = message.replaceAll("<<player-list>>", list.toString());
+			String [] replace = {"<<player-list>>", "<<sleep-list>>", "<<nosleep-list>>"};
+			String [] with    = {list.toString()  , sleepList.toString(), notSleepList.toString()};
+			message = rParser.replaceWords(message, replace, with);
 		}
 		
 		return message;
@@ -552,7 +579,7 @@ public class rTriggers extends JavaPlugin {
 	 *         Name, Display Name, IP address, locale, country, iConomy balance
 	 */
 	public String[] getTagReplacements(Player player){
-		if (player == null || player.getName().equals("&rTriggers")){
+		if (player == null || player.getName().equals("rTriggersPlayer")){
 			String [] returnArray = {"", "", "", "", "", ""};
 			return returnArray;
 		}
