@@ -1,5 +1,5 @@
 name: rTriggers
 author: Reil
 main: com.reil.bukkit.rTriggers.rTriggers
-version: 2.1.2_8
+version: 2.2
 database: true
