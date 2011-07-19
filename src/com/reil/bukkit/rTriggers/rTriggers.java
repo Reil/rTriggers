@@ -51,7 +51,7 @@ public class rTriggers extends JavaPlugin {
 	public BukkitScheduler bukkitScheduler;
 	public PluginManager pluginManager;
 	public rPropertiesFile Messages;
-	public Server MCServer;
+	public static Server MCServer;
 	public Random RNG;
 	public Logger log;
 	private static TimeZone timeZone;
@@ -300,7 +300,7 @@ public class rTriggers extends JavaPlugin {
 			
 			message = stdReplace(message);
 			
-			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>" };
+			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
 			String [] with    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace, with);
 			
@@ -513,8 +513,8 @@ public class rTriggers extends JavaPlugin {
 		String minute = String.format("%tM", time);
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
 		String hour24 = String.format("%tH", time);
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute};
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>", "<<player-count>>"};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute,     Integer.toString(MCServer.getOnlinePlayers().length)};
 		message = rParser.replaceWords(message, replace, with);
 		return message;
 	}
@@ -534,14 +534,25 @@ public class rTriggers extends JavaPlugin {
 			String [] optionSplit = options.split("\\|");
 			String [] messageList = Messages.getStrings("<<list|" + optionSplit[0] + ">>");
 			
-			if (messageList.length > 0){
-				if (!(optionSplit.length > 1) || !optionSplit[1].equalsIgnoreCase("rand")){
+			if (messageList.length != 0){
+				int listNumber;
+				if (optionSplit.length == 0){
 					if(!listTracker.containsKey(optionSplit[0]))
 						listTracker.put(optionSplit[0], 0);
-					int listNumber = listTracker.get(optionSplit[0]);
-					listMember = messageList[listNumber];
+					listNumber = listTracker.get(optionSplit[0]);
 					listTracker.put(optionSplit[0], (listNumber + 1)%messageList.length);
-				} else listMember = messageList[RNG.nextInt(messageList.length)];
+				} else if (optionSplit[1].equalsIgnoreCase("rand")) {
+					listNumber = RNG.nextInt(messageList.length);
+				}
+				else { 
+					try {
+						listNumber = Integer.parseInt(optionSplit[1]);
+					}
+					catch (NumberFormatException e) {
+						listNumber = 0;
+					}
+				}
+				listMember = messageList[listNumber]; 
 			} else listMember = "";
 			message = message.replace("<<list|" + options + ">>", listMember);
 		}
@@ -592,15 +603,22 @@ public class rTriggers extends JavaPlugin {
 		InetSocketAddress IP = player.getAddress();
 		String country;
 		String locale;
+		String IPString;
 		try {
 			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(IP.getAddress());
 			country = playersHere.getDisplayCountry();
 			locale = playersHere.getDisplayName();
 		} catch (Exception e){
+			e.printStackTrace();
 			country = ""; 
 			locale = "";
 		}
-		String [] returnArray = { player.getName(), player.getDisplayName(), IP.toString(), locale, country, Double.toString(balance)};
+		try {
+			IPString = IP.toString();
+		} catch (Exception e){
+			IPString = "";
+		}
+		String [] returnArray = { player.getName(), player.getDisplayName(), IPString, locale, country, Double.toString(balance)};
 		return returnArray;
 	}
 	
