@@ -294,7 +294,15 @@ public class rTriggers extends JavaPlugin {
 			/**************************
 			 * Tag replacement start!
 			 *************************/
-			String message = replaceLists(split[2]);
+			String message = split[2];
+			
+			if (eventToReplace.length > 0) {
+				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
+				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
+				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
+			}
+			
+			message = replaceLists(split[2]);
 			
 			// Regex's which catch @, but not \@ and &, but not \&
 			
@@ -303,12 +311,6 @@ public class rTriggers extends JavaPlugin {
 			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
 			String [] with    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace, with);
-			
-			if (eventToReplace.length > 0) {
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
-				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
-			}
 			/**************************
 			 *  Tag replacement end! */
 			
@@ -536,7 +538,7 @@ public class rTriggers extends JavaPlugin {
 			
 			if (messageList.length != 0){
 				int listNumber;
-				if (optionSplit.length == 0){
+				if (optionSplit.length == 1){
 					if(!listTracker.containsKey(optionSplit[0]))
 						listTracker.put(optionSplit[0], 0);
 					listNumber = listTracker.get(optionSplit[0]);
