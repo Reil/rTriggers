@@ -311,6 +311,13 @@ public class rTriggers extends JavaPlugin {
 			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
 			String [] with    = getTagReplacements(triggerer);
 			message = rParser.replaceWords(message, replace, with);
+			
+			if (eventToReplace.length > 0) {
+				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
+				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
+				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
+			}
+			
 			/**************************
 			 *  Tag replacement end! */
 			
