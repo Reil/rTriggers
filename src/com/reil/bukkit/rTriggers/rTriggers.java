@@ -88,7 +88,7 @@ public class rTriggers extends JavaPlugin {
 		MCServer = getServer();
 		bukkitScheduler = MCServer.getScheduler();
 		pluginManager = MCServer.getPluginManager();
-		Console = new ConsoleCommandSender(MCServer);
+		Console = MCServer.getConsoleSender();
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
         clock = new TimeKeeper(this, bukkitScheduler, 0);
