@@ -109,12 +109,12 @@ public class rTriggers extends JavaPlugin {
 		}
 		try {
 			Class cls = Class.forName ("net.sf.javainetlocator.InetAddressLocator");
-			useRegister = true;
+			useiNetLocator = true;
 			log.info("[rTriggers] InetAddressLocator found.");
 		}
 		catch (ClassNotFoundException e)
 		{
-			useRegister = false;
+			useiNetLocator = false;
 			log.info("[rTriggers] InetAddressLocator not found.  Not using IP-to-Location.  Place InetAddressLocator.jar into your /bin folder if you want this.");
 		}
 		
