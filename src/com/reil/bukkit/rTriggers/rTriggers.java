@@ -3,6 +3,7 @@ package com.reil.bukkit.rTriggers;
 import java.awt.print.Paper;
 import java.io.*;
 import java.net.InetSocketAddress;
+import net.sf.javainetlocator.InetAddressLocator;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
@@ -56,15 +57,16 @@ public class rTriggers extends JavaPlugin {
 	public Logger log;
 	private static TimeZone timeZone;
 	
+	public boolean useRegister;
+	public boolean useiNetLocator;
+	
 	public static String commaSplit = "[ \t]*,[ \t]*";
 	public static String colonSplit = "[ \t]*:[ \t]*";
 	
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
 	PlayerListener playerListener = new rTriggersPlayerListener(this);
 	EntityListener entityListener = new rTriggersEntityListener(this);
-	
-	public Method economyPlugin = null;
-	public Methods economyMethods;
+
 	public CraftIRC CraftIRCPlugin;
 	public PermissionHandler PermissionsPlugin;
 	public Plugin ServerEventsPlugin;
@@ -94,6 +96,28 @@ public class rTriggers extends JavaPlugin {
         clock = new TimeKeeper(this, bukkitScheduler, 0);
         limitTracker = new LimitTracker(this);
 
+        // Checking to see if they've got Register or InetAddressLocator
+        try {
+			Class cls = Class.forName ("com.nijikokun.register.payment.Methods");
+			useRegister = true;
+			log.info("[rTriggers] Register found.");
+		}
+		catch (ClassNotFoundException e)
+		{
+			useRegister = false;
+			log.info("[rTriggers] Register not found.  Not using economy plugins.");
+		}
+		try {
+			Class cls = Class.forName ("net.sf.javainetlocator.InetAddressLocator");
+			useRegister = true;
+			log.info("[rTriggers] InetAddressLocator found.");
+		}
+		catch (ClassNotFoundException e)
+		{
+			useRegister = false;
+			log.info("[rTriggers] InetAddressLocator not found.  Not using IP-to-Location.  Place InetAddressLocator.jar into your /bin folder if you want this.");
+		}
+		
         int largestDelay = 0;
 		try {
 			grabPlugins(pluginManager);
@@ -113,8 +137,6 @@ public class rTriggers extends JavaPlugin {
 			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
 		} else timeZone = TimeZone.getDefault();
 		
-		if (Messages.keyExists("s:economy")) economyMethods = new Methods(Messages.getString("s:economy").trim());
-		else economyMethods = new Methods();
 		// Do onload events for everything that might have loaded before rTriggers
 		serverListener.checkAlreadyLoaded(pluginManager);
 		
@@ -364,7 +386,7 @@ public class rTriggers extends JavaPlugin {
 		if (PermissionsPlugin != null && triggerer != null){
 			for(String permission : permissionTriggerers){
 				String permString = "<<hasperm|" + permission + ">>";
-				if(PermissionsPlugin.has(triggerer, permission)) {
+				if(triggerer.hasPermission(permission)) {
 					if (Messages.keyExists(permString)) sendThese.addAll(Arrays.asList(Messages.getStrings(permString)));
 				} else {
 					if (Messages.keyExists("not|" + permString)) sendThese.addAll(Arrays.asList(Messages.getStrings("not|" + permString)));
@@ -491,7 +513,7 @@ public class rTriggers extends JavaPlugin {
 				}
 			}
 			for (String perm : permissions) {
-				if (PermissionsPlugin.has(addMe, perm)){
+				if (addMe.hasPermission(perm)){
 					players.add(addMe);
 					continue building_the_list;
 				}
@@ -605,23 +627,25 @@ public class rTriggers extends JavaPlugin {
 		}
 		// Get balance tag
 		double balance = 0;
-		if (economyPlugin != null && economyPlugin.hasAccount(player.getName()))
-			balance = economyPlugin.getAccount(player.getName()).balance();
+		if (useRegister && Methods.getMethod() != null && Methods.getMethod().hasAccount(player.getName()))
+			balance = Methods.getMethod().getAccount(player.getName()).balance();
 		
 		// Get ip and locale tags
 		InetSocketAddress IP = player.getAddress();
-		String country;
-		String locale;
+		String country = "";
+		String locale = "";
 		String IPString;
+		
 		try {
-			Locale playersHere = net.sf.javainetlocator.InetAddressLocator.getLocale(IP.getAddress());
-			country = playersHere.getDisplayCountry();
-			locale = playersHere.getDisplayName();
+			if (useiNetLocator) {
+				Locale playersHere = InetAddressLocator.getLocale(IP.getAddress());
+				country = playersHere.getDisplayCountry();
+				locale = playersHere.getDisplayName();
+			}
 		} catch (Exception e){
 			e.printStackTrace();
-			country = ""; 
-			locale = "";
 		}
+		
 		try {
 			IPString = IP.toString();
 		} catch (Exception e){

@@ -5,6 +5,8 @@ import java.util.HashSet;
 import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 
+import com.nijikokun.register.payment.Methods;
+
 public class rTriggersServerListener extends ServerListener {
 	rTriggers plugin;
 	HashSet<String> watchPlugins = new HashSet<String>();
@@ -32,8 +34,7 @@ public class rTriggersServerListener extends ServerListener {
         String pluginName = event.getPlugin().getDescription().getName();
         if(watchPlugins.contains(pluginName)) plugin.triggerMessages("onload|" + pluginName);
         
-        if (!plugin.economyMethods.hasMethod() && plugin.economyMethods.setMethod(event.getPlugin()))
-            plugin.economyPlugin = plugin.economyMethods.getMethod();
+        if (plugin.useRegister && !Methods.hasMethod()) Methods.setMethod(rTriggers.MCServer.getPluginManager());
     }
 	
 	@Override
@@ -52,11 +53,8 @@ public class rTriggersServerListener extends ServerListener {
         }
 
         // Check to see if the plugin thats being disabled is the one we are using for economy
-        if (plugin.economyMethods != null && plugin.economyMethods.hasMethod()) {
-            if(plugin.economyMethods.checkDisabled(event.getPlugin())) {
-                this.plugin.economyPlugin = null;
-                System.out.println("[rTriggers] Payment method was disabled. No longer accepting payments.");
-            }
+        if (plugin.useRegister && Methods.hasMethod() && Methods.checkDisabled(event.getPlugin())) {
+            System.out.println("[rTriggers] Payment method was disabled. No longer accepting payments.");
         }
     }
 }
