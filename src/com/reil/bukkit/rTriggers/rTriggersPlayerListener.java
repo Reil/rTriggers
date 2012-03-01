@@ -3,10 +3,12 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
 
 
-public class rTriggersPlayerListener extends PlayerListener {
+public class rTriggersPlayerListener implements Listener {
 	private final rTriggers plugin;
 
 	/**
@@ -16,17 +18,17 @@ public class rTriggersPlayerListener extends PlayerListener {
 		plugin = rTriggers;
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerBedEnter(PlayerBedEnterEvent event){
 		plugin.triggerMessages(event.getPlayer(), "onbedenter");
 		if (plugin.triggerMessages(event.getPlayer(), "onbedenter|override")) event.setCancelled(true);
 	}
-	@Override
+	@EventHandler
 	public void onPlayerBedLeave(PlayerBedLeaveEvent event){
 		this.plugin.triggerMessages(event.getPlayer(), "onbedleave");
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
 		plugin.triggerMessages(triggerMessage, "onlogin");
@@ -36,7 +38,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		return;
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
 		plugin.triggerMessages(triggerMessage, "ondisconnect");
@@ -48,7 +50,7 @@ public class rTriggersPlayerListener extends PlayerListener {
 		return;
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerKick(PlayerKickEvent event){
 		Player triggerMessage = event.getPlayer();
 		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
@@ -56,12 +58,12 @@ public class rTriggersPlayerListener extends PlayerListener {
 		plugin.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent event){
 		plugin.triggerMessages(event.getPlayer(), "onrespawn");
 	}
 	
-	@Override
+	@EventHandler
 	public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event){
 		Player player = event.getPlayer();
 		

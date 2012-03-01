@@ -2,19 +2,21 @@ package com.reil.bukkit.rTriggers;
 
 import java.util.HashSet;
 
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 
 import com.nijikokun.register.payment.Methods;
 
-public class rTriggersServerListener extends ServerListener {
+public class rTriggersServerListener implements Listener {
 	rTriggers plugin;
 	HashSet<String> watchPlugins = new HashSet<String>();
 	
 	rTriggersServerListener(rTriggers rTriggers){
 		this.plugin = rTriggers;
 	}
-	@Override
+	@EventHandler
 	public void onServerCommand(ServerCommandEvent event){
 		plugin.triggerMessages("onconsole");
 	}
@@ -27,7 +29,7 @@ public class rTriggersServerListener extends ServerListener {
 			if(PM.getPlugin(checkMe) != null) plugin.triggerMessages("onload|" + checkMe);
 	}	
 	
-	@Override
+	@EventHandler
     public void onPluginEnable(PluginEnableEvent event) {
         plugin.grabPlugins(plugin.pluginManager);
         
@@ -37,7 +39,7 @@ public class rTriggersServerListener extends ServerListener {
         if (plugin.useRegister && !Methods.hasMethod()) Methods.setMethod(rTriggers.MCServer.getPluginManager());
     }
 	
-	@Override
+	@EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
 		if (plugin.PermissionsPlugin != null) {
             if (event.getPlugin().getDescription().getName().equals("Permissions")) {

@@ -1,16 +1,19 @@
 package com.reil.bukkit.rTriggers;
 
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.Listener;
 
 
-public class rTriggersEntityListener extends EntityListener{
+public class rTriggersEntityListener implements Listener{
 	private final rTriggers plugin;
 	rTriggersEntityListener(rTriggers rTriggers) {
+		
 		this.plugin = rTriggers;
 	}
 	
-	@Override
+	@EventHandler
 	public void onEntityDamage(EntityDamageEvent event) {
 		if (!(event.getEntity() instanceof Player) || event.isCancelled()) return;
 		Integer gotHit = ((Player) event.getEntity()).getEntityId();
@@ -19,7 +22,7 @@ public class rTriggersEntityListener extends EntityListener{
 			plugin.deathBringer.put(gotHit, (Player) ((EntityDamageByEntityEvent) event).getDamager());
 		}
 	}
-	@Override
+	@EventHandler
 	public void onEntityDeath (EntityDeathEvent event) {
 		String deathBy; 
 		String triggerOption;

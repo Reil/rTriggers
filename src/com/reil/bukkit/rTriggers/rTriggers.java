@@ -15,6 +15,7 @@ import org.bukkit.entity.*;
 import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.event.Event;
+import org.bukkit.event.Listener;
 import org.bukkit.event.Event.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
@@ -64,8 +65,8 @@ public class rTriggers extends JavaPlugin {
 	public static String colonSplit = "[ \t]*:[ \t]*";
 	
 	rTriggersServerListener serverListener = new rTriggersServerListener(this);
-	PlayerListener playerListener = new rTriggersPlayerListener(this);
-	EntityListener entityListener = new rTriggersEntityListener(this);
+	Listener playerListener = new rTriggersPlayerListener(this);
+	Listener entityListener = new rTriggersEntityListener(this);
 
 	public CraftIRC CraftIRCPlugin;
 	public PermissionHandler PermissionsPlugin;
@@ -161,43 +162,7 @@ public class rTriggers extends JavaPlugin {
 			if (!(split.length >= 2)) continue;
 			
 			String options = split[1];
-			if(!flag[0] && (options.isEmpty() || options.contains("onlogin"))){
-				manager.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Monitor, this);
-				flag[0] = true;
-			}
-			if(!flag[1] && options.contains("ondisconnect")){
-				manager.registerEvent(Event.Type.PLAYER_QUIT, playerListener, Priority.Monitor, this);
-				flag[1] = true;
-			}
-			if(!flag[2] && options.contains("oncommand")){
-				manager.registerEvent(Event.Type.PLAYER_COMMAND_PREPROCESS, playerListener, Priority.Monitor, this);
-				flag[2] = true;
-			}
-			if(!flag[3] && options.contains("onkick")){
-				manager.registerEvent(Event.Type.PLAYER_KICK, playerListener, Priority.Monitor, this);
-				flag[3] = true;
-			}
-			if(!flag[4] && options.contains("ondeath")){
-				manager.registerEvent(Event.Type.ENTITY_DAMAGE, entityListener, Priority.Monitor, this);
-				manager.registerEvent(Event.Type.ENTITY_DEATH, entityListener, Priority.Monitor, this);
-				flag[4] = true;
-			}
-			if(!flag[5] && options.contains("onconsole")){
-				manager.registerEvent(Event.Type.SERVER_COMMAND, serverListener, Priority.Monitor, this);
-				flag[5] = true;
-			}
-			if(!flag[6] && options.contains("onrespawn")){
-				manager.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Monitor, this);
-				flag[6] = true;
-			}
-			if(!flag[7] && options.contains("onbedenter")){
-				manager.registerEvent(Event.Type.PLAYER_BED_ENTER, playerListener, Priority.Monitor, this);
-				flag[7] = true;
-			}
-			if(!flag[8] && options.contains("onbedleave")){
-				manager.registerEvent(Event.Type.PLAYER_BED_LEAVE, playerListener, Priority.Monitor, this);
-				flag[8] = true;
-			}
+			
 			if(options.contains("onload")){
 				for (String option: options.split(commaSplit)){
 					if (option.startsWith("onload|")) {
@@ -223,10 +188,9 @@ public class rTriggers extends JavaPlugin {
 				optionsMap.get(option).add(message);
 			}
 		}
-		
-		// Need these no matter what, so we can hook into other plugins (economy, permissions, CraftIRC, ServerEvents)
-		manager.registerEvent(Event.Type.PLUGIN_ENABLE, serverListener, Priority.Monitor, this);
-		manager.registerEvent(Event.Type.PLUGIN_DISABLE, serverListener, Priority.Monitor, this);
+		pluginManager.registerEvents(serverListener, this);
+		pluginManager.registerEvents(playerListener, this);
+		pluginManager.registerEvents(entityListener, this);
 		return largestLimit * 1000;
 	}
 
