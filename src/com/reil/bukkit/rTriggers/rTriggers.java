@@ -33,8 +33,13 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
+import com.reil.bukkit.rTriggers.listener.rTriggersEntityListener;
+import com.reil.bukkit.rTriggers.listener.rTriggersPlayerListener;
+import com.reil.bukkit.rTriggers.listener.rTriggersServerListener;
 import com.reil.bukkit.rTriggers.persistence.LimitTracker;
 import com.reil.bukkit.rTriggers.persistence.TriggerLimit;
+import com.reil.bukkit.rTriggers.timers.TimeKeeper;
+import com.reil.bukkit.rTriggers.timers.rTriggersTimer;
 
 // Fake Player
 import net.minecraft.server.EntityLiving;
@@ -72,11 +77,11 @@ public class rTriggers extends JavaPlugin {
 	public PermissionHandler PermissionsPlugin;
 	public Plugin ServerEventsPlugin;
     
-	TimeKeeper clock;
-	LimitTracker limitTracker;
-    Map <String, Integer> listTracker = new HashMap<String,Integer>();
-	Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
-	Map <Integer, Player> deathBringer = new HashMap <Integer, Player>();
+	public TimeKeeper clock;
+	public LimitTracker limitTracker;
+	public Map <String, Integer> listTracker = new HashMap<String,Integer>();
+	public Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
+	public Map <Integer, Player> deathBringer = new HashMap <Integer, Player>();
 	public Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
 	List<String> permissionTriggerers = new LinkedList<String>();
 

@@ -1,6 +1,8 @@
-package com.reil.bukkit.rTriggers;
+package com.reil.bukkit.rTriggers.timers;
 
 import org.bukkit.entity.Player;
+
+import com.reil.bukkit.rTriggers.rTriggers;
 
 public class rTriggersTimer implements Runnable{
 	String message;

@@ -37,7 +37,7 @@ public class rPropertiesFile {
         }
     }
 	
-	String[] load() throws IOException {
+    public String[] load() throws IOException {
 		/* Go through, line by line. 
 		 * If the line starts with # or !, then save the line in list
 		 * If the line has an assignment, put the name here. */
@@ -88,35 +88,35 @@ public class rPropertiesFile {
 	    return messages.toArray(new String[messages.size()]);
 	}
 
-	void save(){
+	public void save(){
 		
 	}
 
-	boolean getBoolean(java.lang.String key) {
+	public boolean getBoolean(java.lang.String key) {
 		return true; 
 	}
-	boolean	getBoolean(java.lang.String key, boolean value) {
+	public boolean	getBoolean(java.lang.String key, boolean value) {
 		return true;
 	}
-	int	getInt(java.lang.String key){
+	public int	getInt(java.lang.String key){
 		return Integer.parseInt(Properties.get(key).get(0).trim());
 	}
-	int	getInt(java.lang.String key, int value){
+	public int	getInt(java.lang.String key, int value){
 		return 0;
 	}
-	long getLong(java.lang.String key) {
+	public long getLong(java.lang.String key) {
 		return 0;
 	}
-	long getLong(java.lang.String key, long value){
+	public long getLong(java.lang.String key, long value){
 		return 0;
 	}
 	
-	String getString(java.lang.String key) {
+	public String getString(java.lang.String key) {
 		ArrayList<String> arrayList = Properties.get(key);
 		return arrayList.get(0);
 	}
 	
-	String getString(java.lang.String key, java.lang.String value) {
+	public String getString(java.lang.String key, java.lang.String value) {
 		if (Properties.containsKey(key)){
 			ArrayList<String> arrayList = Properties.get(key);
 			return arrayList.get(0);
@@ -128,14 +128,14 @@ public class rPropertiesFile {
 	}
 	
 	
-	String [] getStrings(String key) {
+	public String [] getStrings(String key) {
 		if (Properties.containsKey(key)) {
 			ArrayList <String> rt = Properties.get(key);
 			return rt.toArray(new String[rt.size()]);
 		} else return null;
 	}
 	
-	String [] getStrings(String [] keys){
+	public String [] getStrings(String [] keys){
 		ArrayList <String> returnMe = new ArrayList<String>();
 		for (String key : keys) {
 			if (Properties.containsKey(key)) {
@@ -147,25 +147,25 @@ public class rPropertiesFile {
 		return returnMe.toArray(returnArray);
 	}
 	
-	String [] getKeys() {
+	public String [] getKeys() {
 		Set<String> keys = Properties.keySet();
 		String [] keyArray = new String[keys.size()];
 		return keys.toArray(keyArray);
 	}
 	
-	boolean	keyExists(java.lang.String key) {
+	public boolean	keyExists(java.lang.String key) {
 		return Properties.containsKey(key);
 	}
-	void setBoolean(java.lang.String key, boolean value) {
+	public void setBoolean(java.lang.String key, boolean value) {
 		
 	}
-	void setInt(java.lang.String key, int value) {
+	public void setInt(java.lang.String key, int value) {
 		
 	}
-	void setLong(java.lang.String key, long value) {
+	public void setLong(java.lang.String key, long value) {
 		
 	}
-	void setString(java.lang.String key, java.lang.String value) {
+	public void setString(java.lang.String key, java.lang.String value) {
 		
 	}
 }

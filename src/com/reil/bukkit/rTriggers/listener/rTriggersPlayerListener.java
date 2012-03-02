@@ -1,4 +1,4 @@
-package com.reil.bukkit.rTriggers;
+package com.reil.bukkit.rTriggers.listener;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -6,6 +6,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
+import org.bukkit.event.server.ServerCommandEvent;
+
+import com.reil.bukkit.rTriggers.rTriggers;
 
 
 public class rTriggersPlayerListener implements Listener {
@@ -14,7 +17,7 @@ public class rTriggersPlayerListener implements Listener {
 	/**
 	 * @param rTriggers
 	 */
-	rTriggersPlayerListener(rTriggers rTriggers) {
+	public rTriggersPlayerListener(rTriggers rTriggers) {
 		plugin = rTriggers;
 	}
 	
@@ -61,6 +64,11 @@ public class rTriggersPlayerListener implements Listener {
 	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent event){
 		plugin.triggerMessages(event.getPlayer(), "onrespawn");
+	}
+	
+	@EventHandler
+	public void onServerCommand(ServerCommandEvent event){
+		plugin.triggerMessages("onconsole");
 	}
 	
 	@EventHandler

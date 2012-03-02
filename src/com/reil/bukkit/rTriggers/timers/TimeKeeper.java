@@ -1,8 +1,10 @@
-package com.reil.bukkit.rTriggers;
+package com.reil.bukkit.rTriggers.timers;
 
 import java.util.Calendar;
 
 import org.bukkit.scheduler.BukkitScheduler;
+
+import com.reil.bukkit.rTriggers.rTriggers;
 
 public class TimeKeeper implements Runnable {
 	long delay;

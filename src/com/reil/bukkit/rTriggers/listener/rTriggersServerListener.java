@@ -1,4 +1,4 @@
-package com.reil.bukkit.rTriggers;
+package com.reil.bukkit.rTriggers.listener;
 
 import java.util.HashSet;
 
@@ -8,18 +8,16 @@ import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 
 import com.nijikokun.register.payment.Methods;
+import com.reil.bukkit.rTriggers.rTriggers;
 
 public class rTriggersServerListener implements Listener {
 	rTriggers plugin;
 	HashSet<String> watchPlugins = new HashSet<String>();
 	
-	rTriggersServerListener(rTriggers rTriggers){
+	public rTriggersServerListener(rTriggers rTriggers){
 		this.plugin = rTriggers;
 	}
-	@EventHandler
-	public void onServerCommand(ServerCommandEvent event){
-		plugin.triggerMessages("onconsole");
-	}
+
 	public void listenFor(String pluginName) {
 		watchPlugins.add(pluginName);
 	}

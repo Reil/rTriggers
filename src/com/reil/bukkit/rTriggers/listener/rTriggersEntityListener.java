@@ -1,14 +1,16 @@
-package com.reil.bukkit.rTriggers;
+package com.reil.bukkit.rTriggers.listener;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.Listener;
 
+import com.reil.bukkit.rTriggers.rTriggers;
+
 
 public class rTriggersEntityListener implements Listener{
 	private final rTriggers plugin;
-	rTriggersEntityListener(rTriggers rTriggers) {
+	public rTriggersEntityListener(rTriggers rTriggers) {
 		
 		this.plugin = rTriggers;
 	}
