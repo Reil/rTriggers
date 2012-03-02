@@ -10,11 +10,11 @@ import org.bukkit.plugin.*;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rTriggers.rTriggers;
 
-public class rTriggersServerListener implements Listener {
+public class SetupListener implements Listener {
 	rTriggers plugin;
 	HashSet<String> watchPlugins = new HashSet<String>();
 	
-	public rTriggersServerListener(rTriggers rTriggers){
+	public SetupListener(rTriggers rTriggers){
 		this.plugin = rTriggers;
 	}
 

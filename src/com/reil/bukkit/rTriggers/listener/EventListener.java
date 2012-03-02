@@ -5,19 +5,22 @@ import java.util.List;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 
 import com.reil.bukkit.rTriggers.rTriggers;
 
 
-public class rTriggersPlayerListener implements Listener {
+public class EventListener implements Listener {
 	private final rTriggers plugin;
 
 	/**
 	 * @param rTriggers
 	 */
-	public rTriggersPlayerListener(rTriggers rTriggers) {
+	public EventListener(rTriggers rTriggers) {
 		plugin = rTriggers;
 	}
 	
@@ -48,8 +51,6 @@ public class rTriggersPlayerListener implements Listener {
 		if (plugin.triggerMessages(triggerMessage, "ondisconnect|override")){
 			event.setQuitMessage("");
 		}
-		plugin.deathCause.remove(triggerMessage.getEntityId());
-		plugin.deathBringer.remove(triggerMessage.getEntityId());
 		return;
 	}
 	
@@ -123,5 +124,38 @@ public class rTriggersPlayerListener implements Listener {
         }
 		
 		return; 
+	}
+
+	
+	@EventHandler
+	public void onEntityDeath (EntityDeathEvent event) {
+		String deathBy; 
+		String triggerOption;
+		if (event.getEntity() == null || !(event.getEntity() instanceof Player)) return;
+		
+		EntityDamageEvent damageEvent = event.getEntity().getLastDamageCause();
+		Player deadGuy = (Player) event.getEntity();
+		EntityDamageEvent.DamageCause causeOfDeath = damageEvent.getCause();
+		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
+		triggerOption = causeOfDeath.toString().toLowerCase();
+		deathBy = rTriggers.damageCauseNatural(causeOfDeath);
+		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && damageEvent instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) damageEvent).getDamager() instanceof Player){
+			Player killer = (Player) ((EntityDamageByEntityEvent) damageEvent).getDamager();
+			String weapon = killer.getItemInHand().getType().toString().toLowerCase().replace("_", " ");
+			if (weapon == "air") weapon = "fists";
+			String [] replaceThese = {"<<death-cause>>", "<<killer>>"           , "<<weapon>>"};
+			String [] withThese    = {deathBy          , killer.getDisplayName(), weapon };
+			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
+		} 
+		else{
+			String [] replaceThese = {"<<death-cause>>"};
+			String [] withThese = {deathBy};
+			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|natural", replaceThese, withThese);
+			plugin.triggerMessages(deadGuy, "ondeath|natural|" + triggerOption, replaceThese, withThese);
+		}
 	}
 }

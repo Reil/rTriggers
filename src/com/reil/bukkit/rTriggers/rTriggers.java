@@ -33,9 +33,8 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import com.nijikokun.register.payment.Method;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
-import com.reil.bukkit.rTriggers.listener.rTriggersEntityListener;
-import com.reil.bukkit.rTriggers.listener.rTriggersPlayerListener;
-import com.reil.bukkit.rTriggers.listener.rTriggersServerListener;
+import com.reil.bukkit.rTriggers.listener.EventListener;
+import com.reil.bukkit.rTriggers.listener.SetupListener;
 import com.reil.bukkit.rTriggers.persistence.LimitTracker;
 import com.reil.bukkit.rTriggers.persistence.TriggerLimit;
 import com.reil.bukkit.rTriggers.timers.TimeKeeper;
@@ -69,9 +68,8 @@ public class rTriggers extends JavaPlugin {
 	public static String commaSplit = "[ \t]*,[ \t]*";
 	public static String colonSplit = "[ \t]*:[ \t]*";
 	
-	rTriggersServerListener serverListener = new rTriggersServerListener(this);
-	Listener playerListener = new rTriggersPlayerListener(this);
-	Listener entityListener = new rTriggersEntityListener(this);
+	SetupListener serverListener = new SetupListener(this);
+	Listener playerListener = new EventListener(this);
 
 	public CraftIRC CraftIRCPlugin;
 	public PermissionHandler PermissionsPlugin;
@@ -80,8 +78,6 @@ public class rTriggers extends JavaPlugin {
 	public TimeKeeper clock;
 	public LimitTracker limitTracker;
 	public Map <String, Integer> listTracker = new HashMap<String,Integer>();
-	public Map <Integer, EntityDamageEvent.DamageCause> deathCause = new HashMap <Integer, EntityDamageEvent.DamageCause>();
-	public Map <Integer, Player> deathBringer = new HashMap <Integer, Player>();
 	public Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
 	List<String> permissionTriggerers = new LinkedList<String>();
 
@@ -195,7 +191,6 @@ public class rTriggers extends JavaPlugin {
 		}
 		pluginManager.registerEvents(serverListener, this);
 		pluginManager.registerEvents(playerListener, this);
-		pluginManager.registerEvents(entityListener, this);
 		return largestLimit * 1000;
 	}
 
