@@ -72,7 +72,7 @@ public class rTriggers extends JavaPlugin {
 	Listener playerListener = new EventListener(this);
 
 	public CraftIRC CraftIRCPlugin;
-	public PermissionHandler PermissionsPlugin;
+	PermissionsAdaptor permAdaptor;
 	public Plugin ServerEventsPlugin;
     
 	public TimeKeeper clock;
@@ -97,6 +97,7 @@ public class rTriggers extends JavaPlugin {
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
         clock = new TimeKeeper(this, bukkitScheduler, 0);
         limitTracker = new LimitTracker(this);
+        permAdaptor = new PermissionsAdaptor(this);
 
         // Checking to see if they've got Register or InetAddressLocator
         try {
@@ -199,11 +200,6 @@ public class rTriggers extends JavaPlugin {
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
 	public void grabPlugins(PluginManager manager) {
-		if (PermissionsPlugin == null && manager.getPlugin("Permissions") != null){
-        	PermissionsPlugin = Permissions.Security;
-        	log.info("[rTriggers] Attached to Permissions.");
-        }
-        
         Plugin CraftIRCTry = manager.getPlugin("CraftIRC");
         if (CraftIRCPlugin == null && CraftIRCTry != null){
         	CraftIRCPlugin = (CraftIRC) CraftIRCTry;
@@ -340,17 +336,17 @@ public class rTriggers extends JavaPlugin {
 			groupArray.add("<<player|" + triggerer.getName() + ">>");
 			groupArray.add("<<everyone>>");
 			/* Add any groups the user's a member of. */
-			if(PermissionsPlugin != null) groupArray.addAll(Arrays.asList(PermissionsPlugin.getGroups(triggerer.getWorld().getName(),triggerer.getName())));
+			groupArray.addAll(permAdaptor.getGroups(triggerer));
 		} else groupArray.add("<<customtrigger>>");
 		
 		/* Build set of message candidates */
 		Set<String> sendThese = new LinkedHashSet<String>();
 		for (String groupName : groupArray)
 			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
-		if (PermissionsPlugin != null && triggerer != null){
+		if (triggerer != null){
 			for(String permission : permissionTriggerers){
 				String permString = "<<hasperm|" + permission + ">>";
-				if(triggerer.hasPermission(permission)) {
+				if(permAdaptor.hasPermission(triggerer,permission)) {
 					if (Messages.keyExists(permString)) sendThese.addAll(Arrays.asList(Messages.getStrings(permString)));
 				} else {
 					if (Messages.keyExists("not|" + permString)) sendThese.addAll(Arrays.asList(Messages.getStrings("not|" + permString)));
@@ -465,19 +461,17 @@ public class rTriggers extends JavaPlugin {
 	 * @return A set containing players from the players set and players who either are members of one of the groups or have one of the permissions.
 	 */
 	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> players){
-		if (PermissionsPlugin == null) return players;
-		
 		building_the_list:
 		for (Player addMe: MCServer.getOnlinePlayers()){
 			if (players.contains(addMe)) continue;
 			for(String oneOfUs : groups){
-				if (PermissionsPlugin.inSingleGroup(addMe.getWorld().getName(), addMe.getName(), oneOfUs)){
+				if (permAdaptor.isInGroup(addMe, oneOfUs)){
 					players.add(addMe);
 					continue building_the_list;
 				}
 			}
 			for (String perm : permissions) {
-				if (addMe.hasPermission(perm)){
+				if (permAdaptor.hasPermission(addMe, perm)){
 					players.add(addMe);
 					continue building_the_list;
 				}

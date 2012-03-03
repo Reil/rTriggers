@@ -39,12 +39,6 @@ public class SetupListener implements Listener {
 	
 	@EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
-		if (plugin.PermissionsPlugin != null) {
-            if (event.getPlugin().getDescription().getName().equals("Permissions")) {
-            	plugin.PermissionsPlugin = null;
-                System.out.println("[rTriggers] Unattached from Permissions.");
-            }
-        }
         if (plugin.CraftIRCPlugin != null) {
             if (event.getPlugin().getDescription().getName().equals("CraftIRC")) {
             	plugin.CraftIRCPlugin = null;
