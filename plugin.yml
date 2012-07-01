@@ -1,6 +1,12 @@
 name: rTriggers
 author: Reil
 main: com.reil.bukkit.rTriggers.rTriggers
-version: 2.4.2
+version: 2.5
 database: true
 softdepend: [Permissions, PermissionsEx, Register]
+commands:
+    rtriggers:
+        description: The catch-all command. Used to reload, really.
+        usage: rtriggers [option]
+        permission: rtriggers.admin
+        permission-message: You don't have permission for that!

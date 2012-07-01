@@ -29,12 +29,12 @@ public class SetupListener implements Listener {
 	
 	@EventHandler
     public void onPluginEnable(PluginEnableEvent event) {
-        plugin.grabPlugins(plugin.pluginManager);
+        plugin.grabPlugins(plugin.getServer().getPluginManager());
         
         String pluginName = event.getPlugin().getDescription().getName();
         if(watchPlugins.contains(pluginName)) plugin.triggerMessages("onload|" + pluginName);
         
-        if (plugin.useRegister && !Methods.hasMethod()) Methods.setMethod(rTriggers.MCServer.getPluginManager());
+        if (plugin.useRegister && !Methods.hasMethod()) Methods.setMethod(plugin.getServer().getPluginManager());
     }
 	
 	@EventHandler

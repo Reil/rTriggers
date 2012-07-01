@@ -1,36 +1,27 @@
 package com.reil.bukkit.rTriggers;
 
-import java.awt.print.Paper;
 import java.io.*;
 import java.net.InetSocketAddress;
 import net.sf.javainetlocator.InetAddressLocator;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.*;
 
 import javax.persistence.PersistenceException;
 
 import org.bukkit.entity.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.World;
-import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
-import org.bukkit.event.Event.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.player.*;
-import org.bukkit.event.server.*;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.command.*;
 
 // Plugin hooking
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
-import com.nijiko.permissions.PermissionHandler;
-import com.nijikokun.bukkit.Permissions.Permissions;
-import com.nijikokun.register.payment.Method;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
 import com.reil.bukkit.rTriggers.listener.EventListener;
@@ -41,7 +32,6 @@ import com.reil.bukkit.rTriggers.timers.TimeKeeper;
 import com.reil.bukkit.rTriggers.timers.rTriggersTimer;
 
 // Fake Player
-import net.minecraft.server.EntityLiving;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.ItemInWorldManager;
 import net.minecraft.server.NetServerHandler;
@@ -50,80 +40,61 @@ import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 
-@SuppressWarnings("unused")
+
 public class rTriggers extends JavaPlugin {
-	private ConsoleCommandSender Console;
-	private boolean registered = false;
-	public BukkitScheduler bukkitScheduler;
-	public PluginManager pluginManager;
-	public rPropertiesFile Messages;
-	public static Server MCServer;
 	public Random RNG;
-	public Logger log;
-	private static TimeZone timeZone;
+	public Logger log = Logger.getLogger("Minecraft");
+	public rPropertiesFile Messages;
 	
+	private boolean registered;
 	public boolean useRegister;
 	public boolean useiNetLocator;
 	
-	public static String commaSplit = "[ \t]*,[ \t]*";
-	public static String colonSplit = "[ \t]*:[ \t]*";
+	public static final String commaSplit = "[ \t]*,[ \t]*";
+	public static final String colonSplit = "[ \t]*:[ \t]*";
+	private static TimeZone timeZone;
 	
-	SetupListener serverListener = new SetupListener(this);
-	Listener playerListener = new EventListener(this);
+	private SetupListener serverListener = new SetupListener(this);
+	private Listener playerListener = new EventListener(this);
 
 	public CraftIRC CraftIRCPlugin;
-	PermissionsAdaptor permAdaptor;
+	public PermissionsAdaptor permAdaptor;
 	public Plugin ServerEventsPlugin;
     
 	public TimeKeeper clock;
 	public LimitTracker limitTracker;
-	public Map <String, Integer> listTracker = new HashMap<String,Integer>();
-	public Map <String, HashSet<String>> optionsMap = new HashMap <String, HashSet<String>>();
-	List<String> permissionTriggerers = new LinkedList<String>();
+	public Map <String, Integer> listTracker;
+	public Map <String, HashSet<String>> optionsMap;
+	List<String> permissionTriggerers;
 
-	/*
-	 * START: Functions for setting up the plugin here 
-	 */
-	
-	
-    public void onEnable(){
-		log = Logger.getLogger("Minecraft");
+	@Override
+	public void onEnable(){
 		RNG = new Random();
-		MCServer = getServer();
-		bukkitScheduler = MCServer.getScheduler();
-		pluginManager = MCServer.getPluginManager();
-		Console = MCServer.getConsoleSender();
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
-        clock = new TimeKeeper(this, bukkitScheduler, 0);
+        clock = new TimeKeeper(this, getServer().getScheduler(), 0);
         limitTracker = new LimitTracker(this);
-        permAdaptor = new PermissionsAdaptor(this);
-
-        // Checking to see if they've got Register or InetAddressLocator
-        try {
-			Class cls = Class.forName ("com.nijikokun.register.payment.Methods");
-			useRegister = true;
-			log.info("[rTriggers] Register found.");
-		}
-		catch (ClassNotFoundException e)
-		{
-			useRegister = false;
-			log.info("[rTriggers] Register not found.  Not using economy plugins.");
-		}
-		try {
-			Class cls = Class.forName ("net.sf.javainetlocator.InetAddressLocator");
-			useiNetLocator = true;
-			log.info("[rTriggers] InetAddressLocator found.");
-		}
-		catch (ClassNotFoundException e)
-		{
-			useiNetLocator = false;
-			log.info("[rTriggers] InetAddressLocator not found.  Not using IP-to-Location.  Place InetAddressLocator.jar into your /bin folder if you want this.");
-		}
+        
+        listTracker = new HashMap<String,Integer>();
+        optionsMap = new HashMap<String, HashSet<String>>();
+        permissionTriggerers = new LinkedList<String>();     
+        
+        registered = false;
+        
 		
         int largestDelay = 0;
+        
+        PluginManager manager = getServer().getPluginManager();
+        manager.registerEvents(serverListener, this);
+		manager.registerEvents(playerListener, this);
+		
+        grabPlugins(manager);
+
+        
+        // - Loading the rTriggers.properties file.
+        // - picking out and handling messages with onload and limit options.
+        // - Picking out permissions that trigger.
 		try {
-			grabPlugins(pluginManager);
 			largestDelay = processOptions(Messages.load());
 			for (String key : Messages.getKeys()){
 				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.indexOf("|") + 1,key.length() - 2));
@@ -132,20 +103,63 @@ public class rTriggers extends JavaPlugin {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
 		}
 		generateTimers(Messages);
+		
+		
+		// Set up the database if needed (only needed for delays)
 		if (optionsMap.containsKey("delay")) {
-			setupDatabase();
+	        try {
+	            getDatabase().find(TriggerLimit.class).findRowCount();
+	        } catch (PersistenceException ex) {
+	            System.out.println("[rTriggers] Setting up persistence...");
+	            installDDL();
+	        }
 			log.info("[rTriggers] Cleaned " + limitTracker.cleanEntriesOlderThan(largestDelay) + " entries from delay persistence table");
 		}
+		
+		// Special settings line: timezone
 		if (Messages.keyExists("s:timezone")){
 			timeZone = new SimpleTimeZone(Messages.getInt("s:timezone")*3600000, "Server Time");
 		} else timeZone = TimeZone.getDefault();
 		
 		// Do onload events for everything that might have loaded before rTriggers
-		serverListener.checkAlreadyLoaded(pluginManager);
+		serverListener.checkAlreadyLoaded(getServer().getPluginManager());
 		
 		log.info("[rTriggers] Loaded: Version " + getDescription().getVersion());
 	}
 	
+	@Override
+	public void onDisable(){
+		Messages.save();
+		getServer().getScheduler().cancelTasks(this);
+		log.info("[rTriggers] Disabled!");
+	}
+	
+	@Override
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		if (command.getName().equalsIgnoreCase("rtriggers")){
+			if(args.length >= 1){
+				if (args[0].equalsIgnoreCase("reload") && sender.hasPermission("rtriggers.admin.reload")){
+					getServer().getPluginManager().disablePlugin(this);
+					getServer().getPluginManager().enablePlugin(this);
+				}
+				if (args[0].equalsIgnoreCase("list") && sender.hasPermission("rtriggers.admin.list")){
+					for(String key: Messages.getKeys()){
+						sender.sendMessage(key + ":");
+						sender.sendMessage(Messages.getStrings(key));
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public List<Class<?>> getDatabaseClasses() {
+	    List<Class<?>> list = new ArrayList<Class<?>>();
+	    list.add(TriggerLimit.class);
+	    return list;
+	}
+
 	/**
 	 * Goes through each message in messages[] and registers events that it sees in each.
 	 * @param messages
@@ -157,7 +171,6 @@ public class rTriggers extends JavaPlugin {
 		
 		boolean [] flag = new boolean[9];
 		Arrays.fill(flag, false);
-		PluginManager manager = MCServer.getPluginManager();
 		
 		for(String message : messages){
 			String [] split = message.split(colonSplit, 3);
@@ -174,6 +187,8 @@ public class rTriggers extends JavaPlugin {
 				}
 			}
 			
+			
+			// Places all messages in sets which correspond to each of the message's options.
 			if (options.isEmpty()) options = "onlogin";
 			for(String option : options.split(commaSplit)){
 				if(option.startsWith("limit|")){
@@ -190,21 +205,47 @@ public class rTriggers extends JavaPlugin {
 				optionsMap.get(option).add(message);
 			}
 		}
-		pluginManager.registerEvents(serverListener, this);
-		pluginManager.registerEvents(playerListener, this);
 		return largestLimit * 1000;
 	}
 
 	/**
-	 *  Checks to see if plugins which rTriggers supports have already been loaded.
+	 *  Checks to see if any rTriggers-supported plugins	 have already been loaded.
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
 	public void grabPlugins(PluginManager manager) {
+		// Checking for permissions plugins
+		permAdaptor = new PermissionsAdaptor(this);
+		
+		// Checking for CraftIRC
         Plugin CraftIRCTry = manager.getPlugin("CraftIRC");
         if (CraftIRCPlugin == null && CraftIRCTry != null){
         	CraftIRCPlugin = (CraftIRC) CraftIRCTry;
         	log.info("[rTriggers] Attached to CraftIRC.");
         }
+        
+        // Checking to see if they've got Register or InetAddressLocator
+        try {
+			Class.forName ("com.nijikokun.register.payment.Methods");
+			useRegister = true;
+			log.info("[rTriggers] Register found.");
+		}
+		catch (ClassNotFoundException e)
+		{
+			useRegister = false;
+			log.info("[rTriggers] Register not found.  Not using economy plugins.");
+		}
+        
+        // Checking to see if they have InetAddressLocator.
+		try {
+			Class.forName ("net.sf.javainetlocator.InetAddressLocator");
+			useiNetLocator = true;
+			log.info("[rTriggers] InetAddressLocator found.");
+		}
+		catch (ClassNotFoundException e)
+		{
+			useiNetLocator = false;
+			log.info("[rTriggers] InetAddressLocator not found.  Not using IP-to-Location.  Place InetAddressLocator.jar into your minecraf-server/bin folder if you want this.");
+		}
 	}
 	
 	/*
@@ -217,7 +258,7 @@ public class rTriggers extends JavaPlugin {
 				if (key.startsWith("<<timer|")){
 					for(String message : messages.getStrings(key)){
 						long waitTime = 20 * new Long(key.substring(8, key.length()-2));
-						bukkitScheduler.scheduleAsyncRepeatingTask (this,
+						getServer().getScheduler().scheduleAsyncRepeatingTask (this,
 								new rTriggersTimer(this, message),
 								waitTime, waitTime);
 					}
@@ -228,38 +269,12 @@ public class rTriggers extends JavaPlugin {
 		}
 		if (messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
 	}
-	
-	private void setupDatabase() {
-        try {
-            getDatabase().find(TriggerLimit.class).findRowCount();
-        } catch (PersistenceException ex) {
-            System.out.println("[rTriggers] Setting up persistence...");
-            installDDL();
-        }
-    }
-   @Override
-    public List<Class<?>> getDatabaseClasses() {
-        List<Class<?>> list = new ArrayList<Class<?>>();
-        list.add(TriggerLimit.class);
-        return list;
-    }
-	
-	@Override
-	public void onDisable(){
-		Messages.save();
-		bukkitScheduler.cancelTasks(this);
-		log.info("[rTriggers] Disabled!");
-	} 
-	
-	
-	/*
-	 * Start: Functions for triggering/sending/dispatching messages
-	 */
-	
-	
-	/* Looks through all of the messages,
-	 * Sends the messages triggered by groups which 'triggerMessage' is a member of,
-	 * But only if that message has the contents of 'option' as one of its options */
+
+   /**
+    * Looks through all of the messages,
+	* Sends the messages triggered by groups which 'triggerMessage' is a member of,
+	* But only if that message has the contents of 'option' as one of its options
+	*/
 	public boolean triggerMessages(String option){ return triggerMessages(null, option); }
 	public boolean triggerMessages(Player triggerMessage, String option){ return triggerMessages(triggerMessage, option, new String[0], new String[0]);	}
 	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
@@ -268,7 +283,6 @@ public class rTriggers extends JavaPlugin {
 		/* Send all message candidates */
 		Set<String> sendThese = getMessages(triggerer, option);
 		
-		message_rollout:
 		for (String fullMessage : sendThese){	
 			if (limitTracker.tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
 			
@@ -374,7 +388,7 @@ public class rTriggers extends JavaPlugin {
 			return;
 		}
 		
-		String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
+		final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 		
 		Set <String> sendToGroupsFiltered     = new HashSet <String>();
 		Set <String> dontSendToGroupsFiltered = new HashSet <String>();
@@ -387,6 +401,7 @@ public class rTriggers extends JavaPlugin {
 		dontSendToUs.add(null);
 		
 		World onlyHere = null;
+		Server MCServer = getServer();
 		
 		boolean flagCommand  = false;
 		boolean flagSay      = false;
@@ -419,7 +434,7 @@ public class rTriggers extends JavaPlugin {
 			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
 			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
-				for(String command : message.split("\n")) MCServer.dispatchCommand(Console, command.replaceAll("§.", ""));
+				for(String command : message.split("\n")) MCServer.dispatchCommand(MCServer.getConsoleSender(), command.replaceAll("§.", ""));
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
 				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
@@ -445,14 +460,16 @@ public class rTriggers extends JavaPlugin {
 			} else if (group.equalsIgnoreCase("<<execute>>")){
 				Runtime rt = Runtime.getRuntime();
 				log.info("[rTriggers] Executing:" + message);
-				try {Process pr = rt.exec(message);}
+				try {rt.exec(message);}
 				catch (IOException e) { e.printStackTrace(); }
 			}
 		}
-		/****************************************************
+		/********************************************************
 		 * List of non-special case groups has been constructed.
-		 * Find all the  players who belong to the non-special
-		 * case groups, and send the message to them.  */
+		 * Find all the players who both:
+		 * 1) belong to the non-special case groups in "sendToUs"
+		 * 2) don't belong to groups listed in "dontSendToUs"
+		 * and send the message to them.  */
 		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
 		sendToUs     = constructPlayerList(sendToGroupsFiltered    , sendToPermissions    , sendToUs);
 		sendToUs.removeAll(dontSendToUs);
@@ -469,7 +486,7 @@ public class rTriggers extends JavaPlugin {
 	 */
 	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> players){
 		building_the_list:
-		for (Player addMe: MCServer.getOnlinePlayers()){
+		for (Player addMe: getServer().getOnlinePlayers()){
 			if (players.contains(addMe)) continue;
 			for(String oneOfUs : groups){
 				if (permAdaptor.isInGroup(addMe, oneOfUs)){
@@ -496,7 +513,7 @@ public class rTriggers extends JavaPlugin {
 		if (!flagCommand && !flagSay)
 			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
 		if (flagCommand)
-			for(String command : message.replaceAll("§.", "").split("\n")) MCServer.dispatchCommand(recipient, command); 
+			for(String command : message.replaceAll("§.", "").split("\n")) getServer().dispatchCommand(recipient, command); 
 	}
 
 	/*
@@ -510,7 +527,7 @@ public class rTriggers extends JavaPlugin {
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
 		String hour24 = String.format("%tH", time);
 		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>", "<<player-count>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute,     Integer.toString(MCServer.getOnlinePlayers().length)};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute,     Integer.toString(Bukkit.getServer().getOnlinePlayers().length)};
 		message = rParser.replaceWords(message, replace, with);
 		return message;
 	}
@@ -518,7 +535,7 @@ public class rTriggers extends JavaPlugin {
 	/*
 	 * Will replace user-generated lists, as well as the player list.
 	 */
-	public String replaceLists(String message) {
+	public String replaceCustomLists(String message) {
 		int optionStart;
 		int optionEnd;
 		String listMember;
@@ -552,15 +569,18 @@ public class rTriggers extends JavaPlugin {
 			} else listMember = "";
 			message = message.replace("<<list|" + options + ">>", listMember);
 		}
-		
-		// Now replace any use of <<player-list>>
-		if(message.contains("<<player-list>>") || message.contains("<<sleep-list>>") || message.contains("<<nosleep-list")){
+		return message;
+	}
+	
+	
+	public String replaceGeneratedLists(String message){
+		if(message.contains("<<player-list>>") || message.contains("<<sleep-list>>") || message.contains("<<nosleep-list>>")){
 			StringBuilder list = new StringBuilder();
 			StringBuilder sleepList = new StringBuilder();
 			StringBuilder notSleepList = new StringBuilder();
 			String prefix = "", sleepPrefix = "", notSleepPrefix = "";
 			
-			for (Player getName : MCServer.getOnlinePlayers()){
+			for (Player getName : getServer().getOnlinePlayers()){
 				String name = getName.getDisplayName();
 				list.append(prefix + name);
 				prefix = ", ";
@@ -568,7 +588,7 @@ public class rTriggers extends JavaPlugin {
 					sleepList.append(sleepPrefix + name);
 					sleepPrefix = ", ";
 				} else {
-					notSleepList.append(sleepPrefix + name);
+					notSleepList.append(notSleepPrefix + name);
 					notSleepPrefix = ", ";
 				}
 			}
@@ -576,7 +596,6 @@ public class rTriggers extends JavaPlugin {
 			String [] with    = {list.toString()  , sleepList.toString(), notSleepList.toString()};
 			message = rParser.replaceWords(message, replace, with);
 		}
-		
 		return message;
 	}
 	/**
@@ -620,39 +639,8 @@ public class rTriggers extends JavaPlugin {
 		return returnArray;
 	}
 	
-	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){
-		switch (causeOfDeath) {
-		case CONTACT:
-			return "touching something";
-		case ENTITY_ATTACK:
-			return "being hit";
-		case SUFFOCATION:
-			return "suffocation";
-		case FALL:
-			return "falling";
-		case FIRE:
-			return "fire";
-		case FIRE_TICK:
-			return "burning";
-		case LAVA:
-			return "lava";
-		case DROWNING:
-			return "drowning";
-		case BLOCK_EXPLOSION:
-			return "explosion";
-		case ENTITY_EXPLOSION:
-			return "creeper";
-		case CUSTOM:
-			return "the unknown";
-		case LIGHTNING:
-			return "lighning";
-		default:
-			return "something";
-		}
-	}
-	
 	public Player makeFakePlayer(String Name, Player player) {
-		CraftServer cServer = (CraftServer) MCServer;
+		CraftServer cServer = (CraftServer) getServer();
         CraftWorld cWorld = (CraftWorld) player.getWorld();
         EntityPlayer fakeEntityPlayer = new EntityPlayer(
                         cServer.getHandle().server, cWorld.getHandle(),
@@ -671,11 +659,27 @@ public class rTriggers extends JavaPlugin {
         return fakePlayer;
 	}
 	
-	public static Entity getEntityById(int entityId, World world){
-	    net.minecraft.server.Entity ent = ((CraftWorld)world).getHandle().getEntity(entityId);
-	    if ((ent != null) && ((ent instanceof EntityLiving)))
-	        return ent.getBukkitEntity();
-	    else return null;
+	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){
+		switch (causeOfDeath) {
+		case CONTACT:
+			return "touching something";
+		case ENTITY_ATTACK:
+			return "being hit";
+		case FALL:
+			return "falling";
+		case FIRE_TICK:
+			return "burning";
+		case BLOCK_EXPLOSION:
+			return "explosion";
+		case ENTITY_EXPLOSION:
+			return "creeper";
+		case CUSTOM:
+			return "the unknown";
+		case VOID:
+			return "falling into the void";
+		default:
+			return causeOfDeath.toString().toLowerCase();
+		}
 	}
 	
 	public static String getName(Entity thisGuy){

@@ -1,13 +1,12 @@
 package com.reil.bukkit.rTriggers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
@@ -17,9 +16,9 @@ import ru.tehkode.permissions.PermissionManager;
 import ru.tehkode.permissions.PermissionUser;
 import ru.tehkode.permissions.bukkit.PermissionsEx;
 
-public class PermissionsAdaptor implements Listener {
+public class PermissionsAdaptor {
 	Object permPlugin;
-	rTriggers plugin;
+	JavaPlugin plugin;
 	PermissionType pluginType = PermissionType.NONE;
 	enum PermissionType {
 		NONE,
@@ -32,7 +31,7 @@ public class PermissionsAdaptor implements Listener {
 			plugin.log.info("[rTriggers] Attached to PermissionsEx.");
 			permPlugin = PermissionsEx.getPermissionManager();
 			pluginType = PermissionType.PEX;
-		} else if (plugin.pluginManager.getPlugin("Permissions") != null){
+		} else if (plugin.getServer().getPluginManager().getPlugin("Permissions") != null){
 			permPlugin = Permissions.Security;
 			pluginType = PermissionType.NIJIKOKUN;
 			plugin.log.info("[rTriggers] Attached to Permissions.");
@@ -56,14 +55,15 @@ public class PermissionsAdaptor implements Listener {
 	}
 	
 	public boolean isInGroup(Player player, String Group) {
-		if (permPlugin == null) return false;
-		if (pluginType == PermissionType.PEX){
+		switch (pluginType){
+		case PEX:
 			PermissionUser check = ((PermissionManager) permPlugin).getUser(player.getName());
 			return check.inGroup(Group, player.getWorld().getName(), false);
-		} else if (pluginType == PermissionType.NIJIKOKUN){
+		case NIJIKOKUN:
 			return ((PermissionHandler) permPlugin).inSingleGroup(player.getWorld().getName(), player.getName(), Group);
+		default:
+			return false;
 		}
-		return false;
 	}
 	
 	public boolean hasPermission(Player player, String Perm){

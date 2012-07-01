@@ -96,13 +96,13 @@ public class EventListener implements Listener {
 			reverseParams.insert(0, split[max - i] + prefix);
 			prefix = " ";
 			
-			replaceThese.add("<<param" + Integer.toString(i) + ">>");
+			replaceThese.add("<<param" + i + ">>");
 			withThese.add(split[i]);
 			
-			replaceThese.add("<<param" + Integer.toString(i) + "->>");
+			replaceThese.add("<<param" + i + "->>");
 			withThese.add(params.toString());
 
-			replaceThese.add("<<param" + Integer.toString(max - i) + "\\+>>");
+			replaceThese.add("<<param" + (max - i) + "\\+>>");
 			withThese.add(reverseParams.toString());
 		}
 		replaceThese.add("<<params>>");
@@ -111,13 +111,7 @@ public class EventListener implements Listener {
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
 		plugin.triggerMessages(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
-		
-		
-        if (split[0].equalsIgnoreCase("/rTriggers")) {
-			plugin.triggerMessages(player, "onrTriggers", replaceTheseArray, withTheseArray);
-			event.setCancelled(true);
-		}
-        
+
         if (plugin.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)
         		|| plugin.triggerMessages(player, "oncommand|" + split[0] + "|override|" + numParams, replaceTheseArray, withTheseArray)){
         	event.setCancelled(true);
@@ -142,7 +136,7 @@ public class EventListener implements Listener {
 		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && damageEvent instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) damageEvent).getDamager() instanceof Player){
 			Player killer = (Player) ((EntityDamageByEntityEvent) damageEvent).getDamager();
 			String weapon = killer.getItemInHand().getType().toString().toLowerCase().replace("_", " ");
-			if (weapon == "air") weapon = "fists";
+			if (weapon.equals("air")) weapon = "fists";
 			String [] replaceThese = {"<<death-cause>>", "<<killer>>"           , "<<weapon>>"};
 			String [] withThese    = {deathBy          , killer.getDisplayName(), weapon };
 			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
