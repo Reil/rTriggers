@@ -284,15 +284,15 @@ public class rTriggers extends JavaPlugin {
 				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
 			}
 			
-			message = replaceLists(split[2]);
+			message = replaceCustomLists(split[2]);
+			message = replaceGeneratedLists(message);
 			
 			// Regex's which catch @, but not \@ and &, but not \&
 			
 			message = stdReplace(message);
 			
-			String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
-			String [] with    = getTagReplacements(triggerer);
-			message = rParser.replaceWords(message, replace, with);
+			final String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
+			message = rParser.replaceWords(message, replace, getTagReplacements(triggerer));
 			
 			if (eventToReplace.length > 0) {
 				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
@@ -303,27 +303,34 @@ public class rTriggers extends JavaPlugin {
 			/**************************
 			 *  Tag replacement end! */
 			
-			// Ship out the message.  If it has a delay on it, put it on the scheduler
-			if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage))
-				sendMessage(message, triggerer, split[0]);
-			else {
-				long waitTime = 0;
-				for(String checkOption : split[1].split(commaSplit)) {
-					if (checkOption.startsWith("delay|")) {
-						try{
-							waitTime = 20 * Long.parseLong(checkOption.substring(6));
-						} catch (NumberFormatException e) {
-							log.info("[rTriggers] Bad number format on option: " + checkOption + "\n in message: " + fullMessage);
-							continue;
-						}
-						bukkitScheduler.scheduleAsyncDelayedTask (this,
-								new rTriggersTimer(this, split[0] + "::"+message, triggerer),
-								waitTime);
+			sendMessageCheckDelay(triggerer, fullMessage, message);
+		}
+		return !sendThese.isEmpty();
+	}
+
+	public void sendMessageCheckDelay(Player triggerer, String fullMessage, String message) {
+		// Ship out the message.  If it has a delay on it, put it on the scheduler
+		String[] split = fullMessage.split(colonSplit, 3);
+		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage))
+			sendMessage(message, triggerer, split[0]);
+		else {
+			long waitTime = 0;
+			for(String checkOption : split[1].split(commaSplit)) {
+				if (checkOption.startsWith("delay|")) {
+					try{
+						waitTime = 20 * Long.parseLong(checkOption.substring(6));
+					} catch (NumberFormatException e) {
+						log.info("[rTriggers] Bad number format on option: " + checkOption + "\n in message: " + fullMessage);
+						continue;
 					}
+					// Note, this doesn't actually -remove- the entire delay option, it just reduces it to a number, which the option parser should ignore.
+					fullMessage = split[0] + ":" + split[1].replaceAll("delay|","") + ":" + message;
+					getServer().getScheduler().scheduleAsyncDelayedTask (this,
+							new rTriggersTimer(this, fullMessage , triggerer),
+							waitTime);
 				}
 			}
 		}
-		return !sendThese.isEmpty();
 	}
 	
 	public Set<String> getMessages(Player triggerer, String option) {

@@ -30,12 +30,11 @@ public class TimeKeeper implements Runnable {
 		
 		for (String message : messages){
 			String[] split = message.split(":",3);
-			String recipients = split[0];
-			String sendMe = plugin.replaceLists(split[2]);
+			String sendMe = plugin.replaceCustomLists(split[2]);
+			sendMe = plugin.replaceGeneratedLists(sendMe);
 			
 			sendMe = rTriggers.stdReplace(sendMe);
-			
-			plugin.sendMessage(sendMe, null, recipients);
+			plugin.sendMessageCheckDelay(null, message, sendMe);
 		}
 	}
 

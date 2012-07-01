@@ -5,7 +5,9 @@ import org.bukkit.entity.Player;
 import com.reil.bukkit.rTriggers.rTriggers;
 
 public class rTriggersTimer implements Runnable{
+	String fullmessage;
 	String message;
+	String options;
 	String recipients;
 	rTriggers plugin;
 	Player triggerer;
@@ -16,17 +18,19 @@ public class rTriggersTimer implements Runnable{
 	
 	public rTriggersTimer(rTriggers parentPlugin, String message, Player triggerer){
 		String[] split = message.split(":",3);
+		this.fullmessage=message;
 		this.recipients = split[0];
-		this.message = split[2];
+		this.options    = split[1];
+		this.message    = split[2];
 		this.plugin = parentPlugin;
 		this.triggerer = triggerer;
 	}
 	@Override
 	public void run() {
-		String sendMe = plugin.replaceLists(message);
+		String sendMe = plugin.replaceCustomLists(message);
+		sendMe = plugin.replaceGeneratedLists(sendMe);
 		
 		sendMe = rTriggers.stdReplace(sendMe);
-
-		plugin.sendMessage(sendMe, triggerer, recipients);
+		plugin.sendMessageCheckDelay(null, fullmessage, sendMe);
 	}
 }
