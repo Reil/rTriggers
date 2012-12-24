@@ -31,15 +31,6 @@ import com.reil.bukkit.rTriggers.persistence.TriggerLimit;
 import com.reil.bukkit.rTriggers.timers.TimeKeeper;
 import com.reil.bukkit.rTriggers.timers.rTriggersTimer;
 
-// Fake Player
-import net.minecraft.server.EntityPlayer;
-import net.minecraft.server.ItemInWorldManager;
-import net.minecraft.server.NetServerHandler;
-
-import org.bukkit.craftbukkit.CraftServer;
-import org.bukkit.craftbukkit.CraftWorld;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
-
 
 public class rTriggers extends JavaPlugin {
 	public Random RNG;
@@ -232,7 +223,6 @@ public class rTriggers extends JavaPlugin {
 		catch (ClassNotFoundException e)
 		{
 			useRegister = false;
-			log.info("[rTriggers] Register not found.  Not using economy plugins.");
 		}
         
         // Checking to see if they have InetAddressLocator.
@@ -244,7 +234,6 @@ public class rTriggers extends JavaPlugin {
 		catch (ClassNotFoundException e)
 		{
 			useiNetLocator = false;
-			log.info("[rTriggers] InetAddressLocator not found.  Not using IP-to-Location.  Place InetAddressLocator.jar into your minecraf-server/bin folder if you want this.");
 		}
 	}
 	
@@ -258,7 +247,7 @@ public class rTriggers extends JavaPlugin {
 				if (key.startsWith("<<timer|")){
 					for(String message : messages.getStrings(key)){
 						long waitTime = 20 * new Long(key.substring(8, key.length()-2));
-						getServer().getScheduler().scheduleAsyncRepeatingTask (this,
+						getServer().getScheduler().scheduleSyncRepeatingTask (this,
 								new rTriggersTimer(this, message),
 								waitTime, waitTime);
 					}
@@ -326,7 +315,7 @@ public class rTriggers extends JavaPlugin {
 		// Ship out the message.  If it has a delay on it, put it on the scheduler
 		String[] split = fullMessage.split(colonSplit, 3);
 		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage))
-			sendMessage(message, triggerer, split[0]);
+			sendMessage(message, triggerer, split[0]); 
 		else {
 			long waitTime = 0;
 			for(String checkOption : split[1].split(commaSplit)) {
@@ -339,7 +328,7 @@ public class rTriggers extends JavaPlugin {
 					}
 					// Note, this doesn't actually -remove- the entire delay option, it just reduces it to a number, which the option parser should ignore.
 					fullMessage = split[0] + ":" + split[1].replaceAll("delay|","") + ":" + message;
-					getServer().getScheduler().scheduleAsyncDelayedTask (this,
+					getServer().getScheduler().scheduleSyncDelayedTask (this,
 							new rTriggersTimer(this, fullMessage , triggerer),
 							waitTime);
 				}
@@ -430,7 +419,7 @@ public class rTriggers extends JavaPlugin {
 			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
 			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
 			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
-			else if (group.equalsIgnoreCase("<<player|rTriggersPlayer>>")) sendToUs.add(makeFakePlayer("rTriggersPlayer", triggerer));
+			//else if (group.equalsIgnoreCase("<<player|rTriggersPlayer>>")) sendToUs.add(makeFakePlayer("rTriggersPlayer", triggerer));
 			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
 			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
@@ -526,8 +515,8 @@ public class rTriggers extends JavaPlugin {
 		String minute = String.format("%tM", time);
 		String hour   = Integer.toString(time.get(Calendar.HOUR));
 		String hour24 = String.format("%tH", time);
-		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","<<time>>"         ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>", "<<player-count>>"};
-		String [] with    = {"\n§f"      , "§"         , "§"        ,hour + ":" + minute,hour24 + ":" + minute, hour     , minute,     Integer.toString(Bukkit.getServer().getOnlinePlayers().length)};
+		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","\\\\&", "\\\\@", "<<time>>"          ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>", "<<player-count>>"};
+		String [] with    = {"\n§f"      , "§"         , "§"        ,"&"    , "@"    , hour + ":" + minute,hour24 + ":" + minute  , hour     , minute      , Integer.toString(Bukkit.getServer().getOnlinePlayers().length)};
 		message = rParser.replaceWords(message, replace, with);
 		return message;
 	}
@@ -640,6 +629,7 @@ public class rTriggers extends JavaPlugin {
 	}
 	
 	public Player makeFakePlayer(String Name, Player player) {
+		/*
 		CraftServer cServer = (CraftServer) getServer();
         CraftWorld cWorld = (CraftWorld) player.getWorld();
         EntityPlayer fakeEntityPlayer = new EntityPlayer(
@@ -655,8 +645,9 @@ public class rTriggers extends JavaPlugin {
         
         Player fakePlayer = (Player) fakeEntityPlayer.getBukkitEntity();
         fakePlayer.setDisplayName(Name);
+        */
         
-        return fakePlayer;
+        return null;
 	}
 	
 	public static String damageCauseNatural(EntityDamageEvent.DamageCause causeOfDeath){

@@ -31,6 +31,6 @@ public class rTriggersTimer implements Runnable{
 		sendMe = plugin.replaceGeneratedLists(sendMe);
 		
 		sendMe = rTriggers.stdReplace(sendMe);
-		plugin.sendMessageCheckDelay(null, fullmessage, sendMe);
+		plugin.sendMessage(sendMe, triggerer, recipients);
 	}
 }
