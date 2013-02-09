@@ -77,11 +77,12 @@ public class EventListener implements Listener {
 		Player player = event.getPlayer();
 		
 		String [] split = event.getMessage().split(" ");
+		String command = split[0].toLowerCase();
 		int numParams = split.length - 1;
-		if(! (plugin.optionsMap.containsKey("oncommand|" + split[0]) ||
-				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|" + numParams) ||
-				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override") ||
-				plugin.optionsMap.containsKey("oncommand|" + split[0] + "|override|" + numParams)
+		if(! (plugin.optionsMap.containsKey("oncommand|" + command) ||
+				plugin.optionsMap.containsKey("oncommand|" + command + "|" + numParams) ||
+				plugin.optionsMap.containsKey("oncommand|" + command + "|override") ||
+				plugin.optionsMap.containsKey("oncommand|" + command + "|override|" + numParams)
 				)) return;
 		
 		List<String> replaceThese = new LinkedList<String>();
@@ -110,10 +111,10 @@ public class EventListener implements Listener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
-		plugin.triggerMessages(player, "oncommand|" + split[0], replaceTheseArray, withTheseArray);
+		plugin.triggerMessages(player, "oncommand|" + command, replaceTheseArray, withTheseArray);
 
-        if (plugin.triggerMessages(player, "oncommand|" + split[0] + "|override", replaceTheseArray, withTheseArray)
-        		|| plugin.triggerMessages(player, "oncommand|" + split[0] + "|override|" + numParams, replaceTheseArray, withTheseArray)){
+        if (plugin.triggerMessages(player, "oncommand|" + command + "|override", replaceTheseArray, withTheseArray)
+        		|| plugin.triggerMessages(player, "oncommand|" + command + "|override|" + numParams, replaceTheseArray, withTheseArray)){
         	event.setCancelled(true);
         }
 		
