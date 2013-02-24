@@ -129,8 +129,10 @@ public class EventListener implements Listener {
 		if (event.getEntity() == null || !(event.getEntity() instanceof Player)) return;
 		
 		EntityDamageEvent damageEvent = event.getEntity().getLastDamageCause();
+		EntityDamageEvent.DamageCause causeOfDeath = null;
 		Player deadGuy = (Player) event.getEntity();
-		EntityDamageEvent.DamageCause causeOfDeath = damageEvent.getCause();
+		
+		if (damageEvent != null)  causeOfDeath = damageEvent.getCause();
 		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
 		triggerOption = causeOfDeath.toString().toLowerCase();
 		deathBy = rTriggers.damageCauseNatural(causeOfDeath);
