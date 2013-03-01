@@ -562,7 +562,7 @@ public class rTriggers extends JavaPlugin {
 		} else {
 			final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 			final String [] with    = {"server", "", "", "", "§", ""};
-			log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
+			log.info(rParser.replaceWords(message, replace, with));
 		}
 	}
 
