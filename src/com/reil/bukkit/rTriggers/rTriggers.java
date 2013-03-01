@@ -310,13 +310,14 @@ public class rTriggers extends JavaPlugin {
 		}
 		return !sendThese.isEmpty();
 	}
-
+	
+	// Message has had the 
 	public void sendMessageCheckDelay(Player triggerer, String fullMessage, String message) {
 		// Ship out the message.  If it has a delay on it, put it on the scheduler
 		String[] split = fullMessage.split(colonSplit, 3);
-		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage))
+		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage)) {
 			sendMessage(message, triggerer, split[0]); 
-		else {
+		} else {
 			long waitTime = 0;
 			for(String checkOption : split[1].split(commaSplit)) {
 				if (checkOption.startsWith("delay|")) {
@@ -423,12 +424,11 @@ public class rTriggers extends JavaPlugin {
 			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
 			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
 			else if (group.equalsIgnoreCase("<<command-console>>"))
-				for(String command : message.split("\n")) MCServer.dispatchCommand(MCServer.getConsoleSender(), command.replaceAll("§.", ""));
+				for(String command : message.split("\n")) sendToConsole(command, true);
 			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
 				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
 			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
-				String [] with    = {"server", "", "", "", "§", "",};
-				log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
+				sendToConsole(message, false);
 			}
 			else if (group.startsWith("<<onlyinworld|")) onlyHere = MCServer.getWorld(group.substring(14, group.length() - 2));
 			else if (group.startsWith("<<inworld|")) sendToUs.addAll(MCServer.getWorld(group.substring(10, group.length() - 2)).getPlayers());
@@ -465,7 +465,10 @@ public class rTriggers extends JavaPlugin {
 		
 		if (onlyHere != null) sendToUs.retainAll(onlyHere.getPlayers());
 		
-		for (Player sendToMe : sendToUs) sendToPlayer(message, sendToMe, flagCommand, flagSay);
+
+		for (Player sendToMe : sendToUs) {
+			sendToPlayer(message, sendToMe, flagCommand, flagSay);
+		}
 	}
 	/**
 	 * @param groups A set of group names
@@ -494,6 +497,30 @@ public class rTriggers extends JavaPlugin {
 	}
 	
 	public void sendToPlayer(String message, Player recipient, boolean flagCommand, boolean flagSay) {
+		// Recursion!
+		if (message.contains("<<everyone>>")) {
+			for (Player addMe : getServer().getOnlinePlayers())
+			{
+				String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
+				sendToPlayer(newMessage, recipient, flagCommand, flagSay);
+			}
+			return;
+		}
+		// More recursion!
+		int index = message.indexOf("<<hasperm|");
+		if (index != - 1) {
+			index += "<<hasperm|".length();
+			int endIndex = message.indexOf(">>", index);
+			String perm = message.substring(index, endIndex);
+			for (Player addMe: getServer().getOnlinePlayers()){
+				if (permAdaptor.hasPermission(addMe, perm)){
+					String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
+					sendToPlayer(newMessage, recipient, flagCommand, flagSay);					
+				}
+			}
+			return;
+		}
+		
 		String [] with = getTagReplacements(recipient);
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
 		message = rParser.parseMessage(message, replace, with);
@@ -503,6 +530,40 @@ public class rTriggers extends JavaPlugin {
 			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
 		if (flagCommand)
 			for(String command : message.replaceAll("§.", "").split("\n")) getServer().dispatchCommand(recipient, command); 
+	}
+	
+	public void sendToConsole(String message, boolean isCommand) {
+		// Recursion!
+		if (message.contains("<<everyone>>")) {
+			for (Player addMe : getServer().getOnlinePlayers())
+			{
+				String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
+				sendToConsole(newMessage, isCommand);
+			}
+			return;
+		}
+		// More recursion!
+		int index = message.indexOf("<<hasperm|");
+		if (index != - 1) {
+			index += "<<hasperm|".length();
+			int endIndex = message.indexOf(">>", index);
+			String perm = message.substring(index, endIndex);
+			for (Player addMe: getServer().getOnlinePlayers()){
+				if (permAdaptor.hasPermission(addMe, perm)){
+					String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
+					sendToConsole(newMessage, isCommand);					
+				}
+			}
+			return;
+		}
+		Server MCServer = getServer();
+		if (isCommand) {
+			MCServer.dispatchCommand(MCServer.getConsoleSender(), message.replaceAll("§.", ""));
+		} else {
+			final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
+			final String [] with    = {"server", "", "", "", "§", ""};
+			log.info("[rTriggers] " + rParser.replaceWords(message, replace, with));
+		}
 	}
 
 	/*
