@@ -121,9 +121,12 @@ public class EventListener implements Listener {
 		
 		String [] split = event.getCommand().split(" ");
 		String command = split[0].toLowerCase();
+		
 		int numParams = split.length - 1;
 		if(! (plugin.optionsMap.containsKey("onconsole|" + command) ||
-				plugin.optionsMap.containsKey("onconsole|" + command + "|" + numParams))) return;
+				plugin.optionsMap.containsKey("onconsole|" + command + "|" + numParams) ||
+				plugin.optionsMap.containsKey("onconsole|" + command + "|override") ||
+				plugin.optionsMap.containsKey("onconsole|" + command + "|override|" + numParams))) return;
 		
 		List<String> replaceThese = new LinkedList<String>();
 		List<String> withThese    = new LinkedList<String>();
@@ -151,7 +154,12 @@ public class EventListener implements Listener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
-		plugin.triggerMessages(null, "onconsole|" + command, replaceTheseArray, withTheseArray);
+		plugin.triggerMessages("onconsole|" + command, replaceTheseArray, withTheseArray);
+		
+        if (plugin.triggerMessages("onconsole|" + command + "|override", replaceTheseArray, withTheseArray)
+        		|| plugin.triggerMessages("onconsole|" + command + "|override|" + numParams, replaceTheseArray, withTheseArray)){
+        	event.setCommand("rTriggers");
+        }
 		
 		return; 
 	}
