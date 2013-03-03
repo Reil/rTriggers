@@ -14,6 +14,7 @@ import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
 
@@ -556,9 +557,12 @@ public class rTriggers extends JavaPlugin {
 			}
 			return;
 		}
+		
 		Server MCServer = getServer();
 		if (isCommand) {
-			MCServer.dispatchCommand(MCServer.getConsoleSender(), message.replaceAll("§.", ""));
+			String command = message.replaceAll("§.", "");
+			MCServer.getPluginManager().callEvent( new ServerCommandEvent(MCServer.getConsoleSender(), command));
+			MCServer.dispatchCommand(MCServer.getConsoleSender(), command);
 		} else {
 			final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 			final String [] with    = {"server", "", "", "", "§", ""};
