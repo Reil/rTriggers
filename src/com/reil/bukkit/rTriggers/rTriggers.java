@@ -25,6 +25,7 @@ import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
 import com.nijikokun.register.payment.Methods;
 import com.reil.bukkit.rParser.rParser;
+import com.reil.bukkit.rTriggers.listener.CommandListener;
 import com.reil.bukkit.rTriggers.listener.EventListener;
 import com.reil.bukkit.rTriggers.listener.SetupListener;
 import com.reil.bukkit.rTriggers.persistence.LimitTracker;
@@ -48,6 +49,7 @@ public class rTriggers extends JavaPlugin {
 	
 	private SetupListener serverListener = new SetupListener(this);
 	private Listener playerListener = new EventListener(this);
+	private CommandListener commandListener = new CommandListener(this);
 
 	public CraftIRC CraftIRCPlugin;
 	public PermissionsAdaptor permAdaptor;
@@ -79,8 +81,10 @@ public class rTriggers extends JavaPlugin {
         PluginManager manager = getServer().getPluginManager();
         manager.registerEvents(serverListener, this);
 		manager.registerEvents(playerListener, this);
+		manager.registerEvents(commandListener, this);
 		
         grabPlugins(manager);
+        commandListener.clearMaps();
 
         
         // - Loading the rTriggers.properties file.
@@ -192,6 +196,12 @@ public class rTriggers extends JavaPlugin {
 					else option = "limit";
 				} else if (option.startsWith("delay|")) {
 					option = "delay";
+				} else if (option.startsWith("oncommand|"))	{
+					// TODO
+					commandListener.addCommand(option);
+				} else if (option.startsWith("onconsole|")) {
+					// TODO
+					commandListener.addConsoleCommand(option);
 				}
 				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
 				optionsMap.get(option).add(message);
