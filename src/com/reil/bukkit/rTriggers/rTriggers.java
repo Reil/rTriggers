@@ -349,6 +349,10 @@ public class rTriggers extends JavaPlugin {
 			groupArray.add("<<everyone>>");
 			/* Add any groups the user's a member of. */
 			groupArray.addAll(permAdaptor.getGroups(triggerer));
+			if(triggerer.isOp()){
+				groupArray.add("<<ops>>");
+				groupArray.add("<<op>>");
+			}
 		} else groupArray.add("<<customtrigger>>");
 		
 		/* Build set of message candidates */
