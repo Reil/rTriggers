@@ -89,7 +89,7 @@ public class rTriggers extends JavaPlugin {
 		try {
 			largestDelay = processOptions(Messages.load());
 			for (String key : Messages.getKeys()){
-				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.indexOf("|") + 1,key.length() - 2));
+				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.lastIndexOf("|") + 1,key.length() - 2));
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
