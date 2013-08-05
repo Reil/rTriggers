@@ -1,6 +1,4 @@
 package com.reil.bukkit.rTriggers.listener;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,7 +7,6 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.event.server.ServerCommandEvent;
 
 import com.reil.bukkit.rTriggers.Formatter;
 import com.reil.bukkit.rTriggers.rTriggers;
