@@ -1,40 +1,30 @@
 package com.reil.bukkit.rTriggers;
 
-import java.io.*;
-import java.net.InetSocketAddress;
-import net.sf.javainetlocator.InetAddressLocator;
 import java.util.*;
 import java.util.logging.*;
 
 import javax.persistence.PersistenceException;
 
-import org.bukkit.entity.*;
-import org.bukkit.Bukkit;
-import org.bukkit.Server;
-import org.bukkit.World;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.plugin.*;
 import org.bukkit.plugin.java.*;
 
 // Plugin hooking
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.croemmich.serverevents.ServerEvents;
 import com.ensifera.animosity.craftirc.CraftIRC;
-import com.nijikokun.register.payment.Methods;
-import com.reil.bukkit.rParser.rParser;
+
 import com.reil.bukkit.rTriggers.listener.CommandListener;
 import com.reil.bukkit.rTriggers.listener.EventListener;
 import com.reil.bukkit.rTriggers.listener.SetupListener;
-import com.reil.bukkit.rTriggers.persistence.LimitTracker;
 import com.reil.bukkit.rTriggers.persistence.TriggerLimit;
 import com.reil.bukkit.rTriggers.timers.TimeKeeper;
 import com.reil.bukkit.rTriggers.timers.rTriggersTimer;
 
 
 public class rTriggers extends JavaPlugin {
+	public static rTriggers plugin;
+	
 	public Logger log = Logger.getLogger("Minecraft");
 	public rPropertiesFile Messages;
 	
@@ -42,33 +32,30 @@ public class rTriggers extends JavaPlugin {
 	public boolean useRegister;
 	public boolean useiNetLocator;
 	
-	public static final String commaSplit = "[ \t]*,[ \t]*";
-	public static final String colonSplit = "[ \t]*:[ \t]*";
-	
 	private SetupListener serverListener = new SetupListener(this);
 	private Listener playerListener = new EventListener(this);
 	private CommandListener commandListener = new CommandListener(this);
 	
 	public Formatter formatter;
+	public Dispatcher dispatcher;
 
 	public CraftIRC CraftIRCPlugin;
 	public PermissionsAdaptor permAdaptor;
 	public Plugin ServerEventsPlugin;
     
 	public TimeKeeper clock;
-	public LimitTracker limitTracker;
-	public Map <String, HashSet<String>> optionsMap;
-	List<String> permissionTriggerers;
+	
+	public static final String commaSplit = "[ \t]*,[ \t]*";
+	public static final String colonSplit = "[ \t]*:[ \t]*";
 
 	@Override
 	public void onEnable(){
+		rTriggers.plugin = this;
+		
 		getDataFolder().mkdir();
         Messages = new rPropertiesFile(getDataFolder().getPath() + "/rTriggers.properties");
         clock = new TimeKeeper(this, getServer().getScheduler(), 0);
-        limitTracker = new LimitTracker(this);
         
-        optionsMap = new HashMap<String, HashSet<String>>();
-        permissionTriggerers = new LinkedList<String>();     
         
         registered = false;
         
@@ -82,6 +69,8 @@ public class rTriggers extends JavaPlugin {
 		
         grabPlugins(manager);
         commandListener.clearMaps();
+        
+        dispatcher = new Dispatcher();
 
         
         // - Loading the rTriggers.properties file.
@@ -90,7 +79,9 @@ public class rTriggers extends JavaPlugin {
 		try {
 			largestDelay = processOptions(Messages.load());
 			for (String key : Messages.getKeys()){
-				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")) permissionTriggerers.add(key.substring(key.lastIndexOf("|") + 1,key.length() - 2));
+				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")){
+					dispatcher.permissionTriggerers.add(key.substring(key.lastIndexOf("|") + 1,key.length() - 2));
+				}
 			}
 		} catch (Exception e) {
 			log.log(Level.SEVERE, "[rTriggers]: Exception while loading properties file.", e);
@@ -99,14 +90,14 @@ public class rTriggers extends JavaPlugin {
 		
 		
 		// Set up the database if needed (only needed for delays)
-		if (optionsMap.containsKey("delay")) {
+		if (dispatcher.optionsMap.containsKey("delay")) {
 	        try {
 	            getDatabase().find(TriggerLimit.class).findRowCount();
 	        } catch (PersistenceException ex) {
 	            System.out.println("[rTriggers] Setting up persistence...");
 	            installDDL();
 	        }
-			log.info("[rTriggers] Cleaned " + limitTracker.cleanEntriesOlderThan(largestDelay) + " entries from delay persistence table");
+			log.info("[rTriggers] Cleaned " + dispatcher.limitTracker.cleanEntriesOlderThan(largestDelay) + " entries from delay persistence table");
 		}
 		
 		// Special settings line: timezone
@@ -169,7 +160,7 @@ public class rTriggers extends JavaPlugin {
 		Arrays.fill(flag, false);
 		
 		for(String message : messages){
-			String [] split = message.split(colonSplit, 3);
+			String [] split = message.split(Dispatcher.colonSplit, 3);
 			if (!(split.length >= 2)) continue;
 			
 			String options = split[1];
@@ -197,14 +188,14 @@ public class rTriggers extends JavaPlugin {
 				} else if (option.startsWith("delay|")) {
 					option = "delay";
 				} else if (option.startsWith("oncommand|"))	{
-					// TODO
 					commandListener.addCommand(option);
 				} else if (option.startsWith("onconsole|")) {
-					// TODO
 					commandListener.addConsoleCommand(option);
 				}
-				if(!optionsMap.containsKey(option)) optionsMap.put(option, new HashSet<String>());
-				optionsMap.get(option).add(message);
+				if(!dispatcher.optionsMap.containsKey(option)) {
+					dispatcher.optionsMap.put(option, new HashSet<String>());
+				}
+				dispatcher.optionsMap.get(option).add(message);
 			}
 		}
 		return largestLimit * 1000;
@@ -259,7 +250,7 @@ public class rTriggers extends JavaPlugin {
 					for(String message : messages.getStrings(key)){
 						long waitTime = 20 * new Long(key.substring(8, key.length()-2));
 						getServer().getScheduler().scheduleSyncRepeatingTask (this,
-								new rTriggersTimer(this, message),
+								new rTriggersTimer(message),
 								waitTime, waitTime);
 					}
 				}
@@ -268,319 +259,5 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		if (messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
-	}
-
-   /**
-    * Looks through all of the messages,
-	* Sends the messages triggered by groups which 'triggerMessage' is a member of,
-	* But only if that message has the contents of 'option' as one of its options
-	*/
-	public boolean triggerMessages(String option){ return triggerMessages(null, option); }
-	public boolean triggerMessages(Player triggerMessage, String option){ return triggerMessages(triggerMessage, option, new String[0], new String[0]);	}
-	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
-	
-	public boolean triggerMessages(Player triggerer, String option, String[] eventToReplace, String[] eventReplaceWith){
-		/* Send all message candidates */
-		Set<String> sendThese = getMessages(triggerer, option);
-		
-		for (String fullMessage : sendThese){	
-			if (limitTracker.tooSoon(fullMessage, triggerer)) continue; // Don't send messages if they have the limit option and it's been too soon.
-			
-			String [] split =  fullMessage.split(colonSplit, 3);
-			/**************************
-			 * Tag replacement start!
-			 *************************/
-			String message = split[2];
-			
-			if (eventToReplace.length > 0) {
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
-				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
-			}
-			
-			message = formatter.replaceCustomLists(split[2]);
-			message = formatter.replaceGeneratedLists(message);
-			
-			// Regex's which catch @, but not \@ and &, but not \&
-			
-			message = Formatter.stdReplace(message);
-			
-			final String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
-			message = rParser.replaceWords(message, replace, formatter.getTagReplacements(triggerer));
-			
-			if (eventToReplace.length > 0) {
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
-				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
-			}
-			
-			/**************************
-			 *  Tag replacement end! */
-			
-			sendMessageCheckDelay(triggerer, fullMessage, message);
-		}
-		return !sendThese.isEmpty();
-	}
-	
-	// Message has had the 
-	public void sendMessageCheckDelay(Player triggerer, String fullMessage, String message) {
-		// Ship out the message.  If it has a delay on it, put it on the scheduler
-		String[] split = fullMessage.split(colonSplit, 3);
-		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage)) {
-			sendMessage(message, triggerer, split[0]); 
-		} else {
-			long waitTime = 0;
-			for(String checkOption : split[1].split(commaSplit)) {
-				if (checkOption.startsWith("delay|")) {
-					try{
-						waitTime = 20 * Long.parseLong(checkOption.substring(6));
-					} catch (NumberFormatException e) {
-						log.info("[rTriggers] Bad number format on option: " + checkOption + "\n in message: " + fullMessage);
-						continue;
-					}
-					// Note, this doesn't actually -remove- the entire delay option, it just reduces it to a number, which the option parser should ignore.
-					fullMessage = split[0] + ":" + split[1].replaceAll("delay|","") + ":" + message;
-					getServer().getScheduler().scheduleSyncDelayedTask (this,
-							new rTriggersTimer(this, fullMessage , triggerer),
-							waitTime);
-				}
-			}
-		}
-	}
-	
-	public Set<String> getMessages(Player triggerer, String option) {
-		if (!optionsMap.containsKey(option)) return new HashSet<String>(); 		// This option does not trigger anything
-		
-		/* Build list of groups */
-		List<String> groupArray = new LinkedList<String>();
-		if (triggerer != null){
-			/* Everyone has at least these two. */
-			groupArray.add("<<player|" + triggerer.getName() + ">>");
-			groupArray.add("<<everyone>>");
-			/* Add any groups the user's a member of. */
-			groupArray.addAll(permAdaptor.getGroups(triggerer));
-			if(triggerer.isOp()){
-				groupArray.add("<<ops>>");
-				groupArray.add("<<op>>");
-			}
-		} else groupArray.add("<<customtrigger>>");
-		
-		/* Build set of message candidates */
-		Set<String> sendThese = new LinkedHashSet<String>();
-		for (String groupName : groupArray)
-			if(Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(Messages.getStrings(groupName)));
-		if (triggerer != null){
-			for(String permission : permissionTriggerers){
-				String permString = "<<hasperm|" + permission + ">>";
-				if(permAdaptor.hasPermission(triggerer,permission)) {
-					if (Messages.keyExists(permString)) sendThese.addAll(Arrays.asList(Messages.getStrings(permString)));
-				} else {
-					if (Messages.keyExists("not|" + permString)) sendThese.addAll(Arrays.asList(Messages.getStrings("not|" + permString)));
-				}
-			}
-		}
-		
-		// Remove candidates that aren't for this option
-		sendThese.retainAll(optionsMap.get(option));
-		return sendThese;
-	}
-
-	public void sendMessage(String message, Player triggerer, String groups){
-		/* Default: Send to player unless other groups are specified.
-		 * If so, send to those instead. */
-		if (groups.isEmpty() || groups.equalsIgnoreCase("<<triggerer>>")) {
-			sendToPlayer(message, triggerer, false, false);
-			return;
-		}
-		
-		final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
-		
-		Set <String> sendToGroupsFiltered     = new HashSet <String>();
-		Set <String> dontSendToGroupsFiltered = new HashSet <String>();
-		
-		Set <String> sendToPermissions     = new HashSet <String>();
-		Set <String> dontSendToPermissions = new HashSet <String>();
-		
-		Set <Player> sendToUs     = new HashSet<Player>();
-		Set <Player> dontSendToUs = new HashSet<Player>();
-		dontSendToUs.add(null);
-		
-		World onlyHere = null;
-		Server MCServer = getServer();
-		
-		boolean flagCommand  = false;
-		boolean flagSay      = false;
-		/*************************************
-		 * Begin:
-		 * 1) Constructing list of groups to send to
-		 * 2) Processing 'special' groups (ones in double-chevrons) */
-		for (String group : groups.split(commaSplit)){
-			if (group.startsWith("not|")){
-				String notTarget = group.substring(4);
-				if (!notTarget.startsWith("<<")) dontSendToGroupsFiltered.add(notTarget);
-				else if (notTarget.equalsIgnoreCase("<<triggerer>>")) dontSendToUs.add(triggerer);
-				else if (notTarget.startsWith("<<player|")){
-					String playerName = notTarget.substring(9, notTarget.length()-2);
-					Player putMe = MCServer.getPlayer(playerName);
-					if (putMe != null) dontSendToUs.add(putMe);
-				}
-				else if(notTarget.startsWith("<<hasperm|")) dontSendToPermissions.add(notTarget.substring(10, notTarget.length() - 2));
-				else if(notTarget.startsWith("<<inworld|")) dontSendToUs.addAll(MCServer.getWorld(notTarget.substring(10, group.length() - 2)).getPlayers());
-			}
-			else if (!group.startsWith("<<")) sendToGroupsFiltered.add(group);
-			/* Special cases: start! */
-			else if (group.equalsIgnoreCase("<<everyone>>"))          for (Player addMe : MCServer.getOnlinePlayers()) sendToUs.add(addMe);
-			else if (group.equalsIgnoreCase("<<triggerer>>"))         sendToUs.add(triggerer);
-			else if (group.equalsIgnoreCase("<<command-triggerer>>")) sendToPlayer(message, triggerer, true, false);
-			else if (group.equalsIgnoreCase("<<command-recipient>>")) flagCommand = true;
-			else if (group.equalsIgnoreCase("<<say-triggerer>>"))     sendToPlayer(message, triggerer, false, true);
-			else if (group.equalsIgnoreCase("<<say-recipient>>"))     flagSay     = true;
-			//else if (group.equalsIgnoreCase("<<player|rTriggersPlayer>>")) sendToUs.add(makeFakePlayer("rTriggersPlayer", triggerer));
-			else if (group.startsWith("<<hasperm|")) sendToPermissions.add(group.substring(10, group.length() - 2));
-			else if (group.toLowerCase().startsWith("<<player|"))     sendToUs.add(MCServer.getPlayer(group.substring(9, group.length()-2)));
-			else if (group.equalsIgnoreCase("<<command-console>>"))
-				for(String command : message.split("\n")) sendToConsole(command, true);
-			else if (group.toLowerCase().startsWith("<<craftirc|") && CraftIRCPlugin != null)
-				CraftIRCPlugin.sendMessageToTag(message, group.substring(11, group.length()-2));
-			else if (group.equalsIgnoreCase("<<server>>") || group.equalsIgnoreCase("<<console>>")) {
-				sendToConsole(message, false);
-			}
-			else if (group.startsWith("<<onlyinworld|")) onlyHere = MCServer.getWorld(group.substring(14, group.length() - 2));
-			else if (group.startsWith("<<inworld|")) sendToUs.addAll(MCServer.getWorld(group.substring(10, group.length() - 2)).getPlayers());
-			else if (group.toLowerCase().startsWith("<<near-triggerer|") && triggerer != null){
-				int distance = new Integer(group.substring(17, group.length() - 2));
-				for (Entity addMe : triggerer.getNearbyEntities(distance, distance, 127))
-					if (addMe instanceof Player) sendToUs.add((Player) addMe);
-			}
-			else if (group.equalsIgnoreCase("<<twitter>>")){
-				String [] with    = {"Twitter", "", "", "",""};
-				if (ServerEventsPlugin != null){
-					try {
-						ServerEvents.displayMessage(rParser.replaceWords(message, replace, with));
-					} catch (ClassCastException ex){
-						log.info("[rTriggers] ServerEvents not found!");
-					}
-				} else  log.info("[rTriggers] ServerEvents not found!");
-			} else if (group.equalsIgnoreCase("<<execute>>")){
-				Runtime rt = Runtime.getRuntime();
-				log.info("[rTriggers] Executing:" + message);
-				try {rt.exec(message);}
-				catch (IOException e) { e.printStackTrace(); }
-			}
-		}
-		/********************************************************
-		 * List of non-special case groups has been constructed.
-		 * Find all the players who both:
-		 * 1) belong to the non-special case groups in "sendToUs"
-		 * 2) don't belong to groups listed in "dontSendToUs"
-		 * and send the message to them.  */
-		dontSendToUs = constructPlayerList(dontSendToGroupsFiltered, dontSendToPermissions, dontSendToUs);
-		sendToUs     = constructPlayerList(sendToGroupsFiltered    , sendToPermissions    , sendToUs);
-		sendToUs.removeAll(dontSendToUs);
-		
-		if (onlyHere != null) sendToUs.retainAll(onlyHere.getPlayers());
-		
-
-		for (Player sendToMe : sendToUs) {
-			sendToPlayer(message, sendToMe, flagCommand, flagSay);
-		}
-	}
-	/**
-	 * @param groups A set of group names
-	 * @param permissions A set of permission node names 
-	 * @param players A set of players
-	 * @return A set containing players from the players set and players who either are members of one of the groups or have one of the permissions.
-	 */
-	public Set<Player> constructPlayerList(Set<String> groups, Set<String> permissions, Set<Player> players){
-		building_the_list:
-		for (Player addMe: getServer().getOnlinePlayers()){
-			if (players.contains(addMe)) continue;
-			for(String oneOfUs : groups){
-				if (permAdaptor.isInGroup(addMe, oneOfUs)){
-					players.add(addMe);
-					continue building_the_list;
-				}
-			}
-			for (String perm : permissions) {
-				if (permAdaptor.hasPermission(addMe, perm)){
-					players.add(addMe);
-					continue building_the_list;
-				}
-			}
-		}
-		return players;
-	}
-	
-	public void sendToPlayer(String message, Player recipient, boolean flagCommand, boolean flagSay) {
-		// Recursion!
-		if (message.contains("<<everyone>>")) {
-			for (Player addMe : getServer().getOnlinePlayers())
-			{
-				String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
-				sendToPlayer(newMessage, recipient, flagCommand, flagSay);
-			}
-			return;
-		}
-		// More recursion!
-		int index = message.indexOf("<<hasperm|");
-		if (index != - 1) {
-			index += "<<hasperm|".length();
-			int endIndex = message.indexOf(">>", index);
-			String perm = message.substring(index, endIndex);
-			for (Player addMe: getServer().getOnlinePlayers()){
-				if (permAdaptor.hasPermission(addMe, perm)){
-					String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
-					sendToPlayer(newMessage, recipient, flagCommand, flagSay);					
-				}
-			}
-			return;
-		}
-		
-		String [] with = formatter.getTagReplacements(recipient);
-		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
-		message = rParser.parseMessage(message, replace, with);
-		if (flagSay)
-			for(String sayThis : message.split("\n")) recipient.chat(sayThis);
-		if (!flagCommand && !flagSay)
-			for(String sendMe  : message.split("\n")) recipient.sendMessage(sendMe);
-		if (flagCommand)
-			for(String command : message.replaceAll("§.", "").split("\n")) getServer().dispatchCommand(recipient, command); 
-	}
-	
-	public void sendToConsole(String message, boolean isCommand) {
-		// Recursion!
-		if (message.contains("<<everyone>>")) {
-			for (Player addMe : getServer().getOnlinePlayers())
-			{
-				String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
-				sendToConsole(newMessage, isCommand);
-			}
-			return;
-		}
-		// More recursion!
-		int index = message.indexOf("<<hasperm|");
-		if (index != - 1) {
-			index += "<<hasperm|".length();
-			int endIndex = message.indexOf(">>", index);
-			String perm = message.substring(index, endIndex);
-			for (Player addMe: getServer().getOnlinePlayers()){
-				if (permAdaptor.hasPermission(addMe, perm)){
-					String newMessage = message.replaceAll("<<everyone>>", addMe.getName());
-					sendToConsole(newMessage, isCommand);					
-				}
-			}
-			return;
-		}
-		
-		Server MCServer = getServer();
-		if (isCommand) {
-			String command = message.replaceAll("§.", "");
-			MCServer.getPluginManager().callEvent( new ServerCommandEvent(MCServer.getConsoleSender(), command));
-			MCServer.dispatchCommand(MCServer.getConsoleSender(), command);
-		} else {
-			final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
-			final String [] with    = {"server", "", "", "", "§", ""};
-			log.info(rParser.replaceWords(message, replace, with));
-		}
 	}
 }

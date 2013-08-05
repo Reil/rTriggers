@@ -10,9 +10,9 @@ import com.reil.bukkit.rTriggers.rTriggers;
 public class LimitTracker {
 	rTriggers plugin;
 	EbeanServer database;
-	public LimitTracker (rTriggers rTriggersPlugin) {
-		plugin = rTriggersPlugin;
-		database = rTriggersPlugin.getDatabase();
+	public LimitTracker () {
+		plugin = rTriggers.plugin;
+		database = plugin.getDatabase();
 	}
 	 /*
 	 * Checks to see if:
@@ -21,11 +21,11 @@ public class LimitTracker {
 	 */
 	public boolean tooSoon(String message, Player triggerer) {
 		String triggerName;
-		if (plugin.optionsMap.containsKey("limit") && plugin.optionsMap.get("limit").contains(message)){
+		if (plugin.dispatcher.optionsMap.containsKey("limit") && plugin.dispatcher.optionsMap.get("limit").contains(message)){
 			triggerName = "&rTriggers";
 		} else if (triggerer != null &&
-				plugin.optionsMap.containsKey("limit|pertriggerer")&& 
-				plugin.optionsMap.get("limit|pertriggerer").contains(message)) {
+				plugin.dispatcher.optionsMap.containsKey("limit|pertriggerer")&& 
+				plugin.dispatcher.optionsMap.get("limit|pertriggerer").contains(message)) {
 			triggerName = triggerer.getName();
 		} else return false;
 		

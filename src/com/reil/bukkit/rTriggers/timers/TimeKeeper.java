@@ -35,7 +35,7 @@ public class TimeKeeper implements Runnable {
 			sendMe = plugin.formatter.replaceGeneratedLists(sendMe);
 			
 			sendMe = Formatter.stdReplace(sendMe);
-			plugin.sendMessageCheckDelay(null, message, sendMe);
+			plugin.dispatcher.sendMessageCheckDelay(null, message, sendMe);
 		}
 	}
 

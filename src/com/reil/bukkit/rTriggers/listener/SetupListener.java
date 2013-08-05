@@ -24,7 +24,7 @@ public class SetupListener implements Listener {
 	
 	public void checkAlreadyLoaded(PluginManager PM) {
 		for(String checkMe:watchPlugins)
-			if(PM.getPlugin(checkMe) != null) plugin.triggerMessages("onload|" + checkMe);
+			if(PM.getPlugin(checkMe) != null) plugin.dispatcher.triggerMessages("onload|" + checkMe);
 	}	
 	
 	@EventHandler
@@ -32,7 +32,7 @@ public class SetupListener implements Listener {
         plugin.grabPlugins(plugin.getServer().getPluginManager());
         
         String pluginName = event.getPlugin().getDescription().getName();
-        if(watchPlugins.contains(pluginName)) plugin.triggerMessages("onload|" + pluginName);
+        if(watchPlugins.contains(pluginName)) plugin.dispatcher.triggerMessages("onload|" + pluginName);
         
         if (plugin.useRegister && !Methods.hasMethod()) Methods.setMethod(plugin.getServer().getPluginManager());
     }

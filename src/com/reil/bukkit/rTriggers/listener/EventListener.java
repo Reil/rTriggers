@@ -27,19 +27,19 @@ public class EventListener implements Listener {
 	
 	@EventHandler
 	public void onPlayerBedEnter(PlayerBedEnterEvent event){
-		plugin.triggerMessages(event.getPlayer(), "onbedenter");
-		if (plugin.triggerMessages(event.getPlayer(), "onbedenter|override")) event.setCancelled(true);
+		plugin.dispatcher.triggerMessages(event.getPlayer(), "onbedenter");
+		if (plugin.dispatcher.triggerMessages(event.getPlayer(), "onbedenter|override")) event.setCancelled(true);
 	}
 	@EventHandler
 	public void onPlayerBedLeave(PlayerBedLeaveEvent event){
-		this.plugin.triggerMessages(event.getPlayer(), "onbedleave");
+		this.plugin.dispatcher.triggerMessages(event.getPlayer(), "onbedleave");
 	}
 	
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event){
 		Player triggerMessage = event.getPlayer();
-		plugin.triggerMessages(triggerMessage, "onlogin");
-		if (plugin.triggerMessages(triggerMessage, "onlogin|override")){
+		plugin.dispatcher.triggerMessages(triggerMessage, "onlogin");
+		if (plugin.dispatcher.triggerMessages(triggerMessage, "onlogin|override")){
 			event.setJoinMessage("");
 		}
 		return;
@@ -48,8 +48,8 @@ public class EventListener implements Listener {
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event){
 		Player triggerMessage = event.getPlayer();
-		plugin.triggerMessages(triggerMessage, "ondisconnect");
-		if (plugin.triggerMessages(triggerMessage, "ondisconnect|override")){
+		plugin.dispatcher.triggerMessages(triggerMessage, "ondisconnect");
+		if (plugin.dispatcher.triggerMessages(triggerMessage, "ondisconnect|override")){
 			event.setQuitMessage("");
 		}
 		return;
@@ -60,12 +60,12 @@ public class EventListener implements Listener {
 		Player triggerMessage = event.getPlayer();
 		String [] replaceThese = {"<<kick-reason>>" , "<<kickedplayer>>"     };
 		String [] withThese =    {event.getReason() , triggerMessage.getName()};
-		plugin.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
+		plugin.dispatcher.triggerMessages(triggerMessage, "onkick", replaceThese, withThese);
 	}
 	
 	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent event){
-		plugin.triggerMessages(event.getPlayer(), "onrespawn");
+		plugin.dispatcher.triggerMessages(event.getPlayer(), "onrespawn");
 	}
 
 	
@@ -89,17 +89,17 @@ public class EventListener implements Listener {
 			if (weapon.equals("air")) weapon = "fists";
 			String [] replaceThese = {"<<death-cause>>", "<<killer>>"           , "<<weapon>>"};
 			String [] withThese    = {deathBy          , killer.getDisplayName(), weapon };
-			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath|playerkill", replaceThese, withThese);
 		} 
 		else{
 			String [] replaceThese = {"<<death-cause>>"};
 			String [] withThese = {deathBy};
-			plugin.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|natural", replaceThese, withThese);
-			plugin.triggerMessages(deadGuy, "ondeath|natural|" + triggerOption, replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath", replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath|" + triggerOption, replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath|natural", replaceThese, withThese);
+			plugin.dispatcher.triggerMessages(deadGuy, "ondeath|natural|" + triggerOption, replaceThese, withThese);
 		}
 	}
 }
