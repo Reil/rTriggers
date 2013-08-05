@@ -2,6 +2,7 @@ package com.reil.bukkit.rTriggers.timers;
 
 import org.bukkit.entity.Player;
 
+import com.reil.bukkit.rTriggers.Formatter;
 import com.reil.bukkit.rTriggers.rTriggers;
 
 public class rTriggersTimer implements Runnable{
@@ -27,10 +28,10 @@ public class rTriggersTimer implements Runnable{
 	}
 	@Override
 	public void run() {
-		String sendMe = plugin.replaceCustomLists(message);
-		sendMe = plugin.replaceGeneratedLists(sendMe);
+		String sendMe = plugin.formatter.replaceCustomLists(message);
+		sendMe = plugin.formatter.replaceGeneratedLists(sendMe);
 		
-		sendMe = rTriggers.stdReplace(sendMe);
+		sendMe = Formatter.stdReplace(sendMe);
 		plugin.sendMessage(sendMe, triggerer, recipients);
 	}
 }

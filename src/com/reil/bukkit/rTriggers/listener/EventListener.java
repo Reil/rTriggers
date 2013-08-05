@@ -11,6 +11,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 
+import com.reil.bukkit.rTriggers.Formatter;
 import com.reil.bukkit.rTriggers.rTriggers;
 
 
@@ -81,7 +82,7 @@ public class EventListener implements Listener {
 		if (damageEvent != null)  causeOfDeath = damageEvent.getCause();
 		if (causeOfDeath == null) causeOfDeath = EntityDamageEvent.DamageCause.CUSTOM;
 		triggerOption = causeOfDeath.toString().toLowerCase();
-		deathBy = rTriggers.damageCauseNatural(causeOfDeath);
+		deathBy = Formatter.damageCauseNatural(causeOfDeath);
 		if (causeOfDeath == EntityDamageEvent.DamageCause.ENTITY_ATTACK && damageEvent instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) damageEvent).getDamager() instanceof Player){
 			Player killer = (Player) ((EntityDamageByEntityEvent) damageEvent).getDamager();
 			String weapon = killer.getItemInHand().getType().toString().toLowerCase().replace("_", " ");

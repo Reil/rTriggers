@@ -4,6 +4,7 @@ import java.util.Calendar;
 
 import org.bukkit.scheduler.BukkitScheduler;
 
+import com.reil.bukkit.rTriggers.Formatter;
 import com.reil.bukkit.rTriggers.rTriggers;
 
 public class TimeKeeper implements Runnable {
@@ -30,10 +31,10 @@ public class TimeKeeper implements Runnable {
 		
 		for (String message : messages){
 			String[] split = message.split(":",3);
-			String sendMe = plugin.replaceCustomLists(split[2]);
-			sendMe = plugin.replaceGeneratedLists(sendMe);
+			String sendMe = plugin.formatter.replaceCustomLists(split[2]);
+			sendMe = plugin.formatter.replaceGeneratedLists(sendMe);
 			
-			sendMe = rTriggers.stdReplace(sendMe);
+			sendMe = Formatter.stdReplace(sendMe);
 			plugin.sendMessageCheckDelay(null, message, sendMe);
 		}
 	}
