@@ -17,7 +17,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.server.ServerCommandEvent;
 
-import com.reil.bukkit.rParser.rParser;
 import com.reil.bukkit.rTriggers.persistence.LimitTracker;
 import com.reil.bukkit.rTriggers.timers.rTriggersTimer;
 
@@ -26,6 +25,8 @@ public class Dispatcher {
 	public static final String colonSplit = "[ \t]*:[ \t]*";
 	
 	public LimitTracker limitTracker;
+
+	// List of all things that have a <<hasperm>> or not|<<hasperm>> event tied to it
 	List<String> permissionTriggerers;
 		
 	public Map <String, HashSet<String>> optionsMap;
@@ -40,11 +41,11 @@ public class Dispatcher {
 	* Sends the messages triggered by groups which 'triggerMessage' is a member of,
 	* But only if that message has the contents of 'option' as one of its options
 	*/
-	public boolean triggerMessages(String option){ return triggerMessages(null, option); }
-	public boolean triggerMessages(Player triggerMessage, String option){ return triggerMessages(triggerMessage, option, new String[0], new String[0]);	}
-	public boolean triggerMessages(String option, String[] eventToReplace, String []eventReplaceWith){ return triggerMessages(null, option, eventToReplace, eventReplaceWith);}
+	public boolean dispatchEvents(String option){ return dispatchEvents(null, option); }
+	public boolean dispatchEvents(Player triggerMessage, String option){ return dispatchEvents(triggerMessage, option, new String[0], new String[0]);	}
+	public boolean dispatchEvents(String option, String[] eventToReplace, String []eventReplaceWith){ return dispatchEvents(null, option, eventToReplace, eventReplaceWith);}
 	
-	public boolean triggerMessages(Player triggerer, String option, String[] eventToReplace, String[] eventReplaceWith){
+	public boolean dispatchEvents(Player triggerer, String option, String[] eventToReplace, String[] eventReplaceWith){
 		/* Send all message candidates */
 		Set<String> sendThese = getMessages(triggerer, option);
 		
@@ -58,9 +59,9 @@ public class Dispatcher {
 			String message = split[2];
 			
 			if (eventToReplace.length > 0) {
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
-				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
+				message  = Formatter.replaceWords(message, eventToReplace, eventReplaceWith);
+				split[0] = Formatter.replaceWords(split[0], eventToReplace, eventReplaceWith);
+				split[1] = Formatter.replaceWords(split[1], eventToReplace, eventReplaceWith);
 			}
 			
 			message = rTriggers.plugin.formatter.replaceCustomLists(split[2]);
@@ -71,12 +72,12 @@ public class Dispatcher {
 			message = Formatter.stdReplace(message);
 			
 			final String [] replace = { "<<triggerer>>", "<<triggerer-displayname>>", "<<triggerer-ip>>", "<<triggerer-locale>>", "<<triggerer-country>>", "<<triggerer-balance>>", };
-			message = rParser.replaceWords(message, replace, rTriggers.plugin.formatter.getTagReplacements(triggerer));
+			message = Formatter.replaceWords(message, replace, rTriggers.plugin.formatter.getTagReplacements(triggerer));
 			
 			if (eventToReplace.length > 0) {
-				message = rParser.replaceWords(message, eventToReplace, eventReplaceWith);
-				split[0] = rParser.replaceWords(split[0], eventToReplace, eventReplaceWith);
-				split[1] = rParser.replaceWords(split[1], eventToReplace, eventReplaceWith);
+				message  = Formatter.replaceWords(message, eventToReplace, eventReplaceWith);
+				split[0] = Formatter.replaceWords(split[0], eventToReplace, eventReplaceWith);
+				split[1] = Formatter.replaceWords(split[1], eventToReplace, eventReplaceWith);
 			}
 			
 			/**************************
@@ -221,7 +222,7 @@ public class Dispatcher {
 				String [] with    = {"Twitter", "", "", "",""};
 				if (rTriggers.plugin.ServerEventsPlugin != null){
 					try {
-						ServerEvents.displayMessage(rParser.replaceWords(message, replace, with));
+						ServerEvents.displayMessage(Formatter.replaceWords(message, replace, with));
 					} catch (ClassCastException ex){
 						rTriggers.plugin.log.info("[rTriggers] ServerEvents not found!");
 					}
@@ -303,7 +304,7 @@ public class Dispatcher {
 		
 		String [] with = rTriggers.plugin.formatter.getTagReplacements(recipient);
 		String [] replace = {"<<recipient>>", "<<recipient-ip>>", "<<recipient-locale>>", "<<recipient-country>>", "<<recipient-balance>>"};
-		message = rParser.parseMessage(message, replace, with);
+		message = Formatter.parseMessage(message, replace, with);
 		if (flagSay)
 			for(String sayThis : message.split("\n")) recipient.chat(sayThis);
 		if (!flagCommand && !flagSay)
@@ -345,7 +346,7 @@ public class Dispatcher {
 		} else {
 			final String [] replace = {"<<recipient>>", "<<recipient-displayname>>", "<<recipient-ip>>", "<<recipient-color>>", "<<recipient-balance>>", "§"};
 			final String [] with    = {"server", "", "", "", "§", ""};
-			rTriggers.plugin.log.info(rParser.replaceWords(message, replace, with));
+			rTriggers.plugin.log.info(Formatter.replaceWords(message, replace, with));
 		}
 	}
 }

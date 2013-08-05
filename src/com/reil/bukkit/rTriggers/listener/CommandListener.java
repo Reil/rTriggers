@@ -62,7 +62,7 @@ public class CommandListener implements Listener {
 
         for(CommandData data : commandMap.get(command)) {
         	if(data.match(numParams)) {
-        		if(plugin.dispatcher.triggerMessages(player, data.options, replaceTheseArray, withTheseArray)
+        		if(plugin.dispatcher.dispatchEvents(player, data.options, replaceTheseArray, withTheseArray)
         				&& data.override) {
         			event.setCancelled(true);
         		}
@@ -90,7 +90,7 @@ public class CommandListener implements Listener {
         for(CommandData data : commandMap.get(command)){
         	if(data.match(numParams))
         	{
-        		if(plugin.dispatcher.triggerMessages(data.options, replaceTheseArray, withTheseArray)
+        		if(plugin.dispatcher.dispatchEvents(data.options, replaceTheseArray, withTheseArray)
         				&& data.override){
         			// We can't override console commands, so instead,
         			// we can set this to a console command that we CAN
