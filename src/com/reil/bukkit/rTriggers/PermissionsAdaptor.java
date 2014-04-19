@@ -7,31 +7,33 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
-import ru.tehkode.permissions.PermissionGroup;
-import ru.tehkode.permissions.PermissionManager;
-import ru.tehkode.permissions.PermissionUser;
-import ru.tehkode.permissions.bukkit.PermissionsEx;
+import net.milkbowl.vault.permission.Permission;
+
 
 public class PermissionsAdaptor {
 	Object permPlugin;
 	JavaPlugin plugin;
 	PermissionType pluginType = PermissionType.NONE;
+	private static Permission vaultPerms = null;
 	enum PermissionType {
 		NONE,
-		PEX,
+		VAULT,
 		NIJIKOKUN;
 	}
 	
 	public PermissionsAdaptor(rTriggers plugin){
-		if(Bukkit.getServer().getPluginManager().isPluginEnabled("PermissionsEx")){
-			plugin.log.info("[rTriggers] Attached to PermissionsEx.");
-			permPlugin = PermissionsEx.getPermissionManager();
-			pluginType = PermissionType.PEX;
-		} else if (plugin.getServer().getPluginManager().getPlugin("Permissions") != null){
+		RegisteredServiceProvider<Permission> rsp =plugin. getServer().getServicesManager().getRegistration(Permission.class);
+	    vaultPerms = rsp.getProvider();
+	    
+		if(vaultPerms == null) {
+			pluginType = PermissionType.VAULT;
+		}
+		else if (plugin.getServer().getPluginManager().getPlugin("Permissions") != null){
 			permPlugin = Permissions.Security;
 			pluginType = PermissionType.NIJIKOKUN;
 			plugin.log.info("[rTriggers] Attached to Permissions.");
@@ -39,42 +41,35 @@ public class PermissionsAdaptor {
 	}
 	
 	public List<String> getGroups(Player player){
-		LinkedList<String> returnMe = new LinkedList<String>();
 		switch (pluginType) {
-		case PEX:
-			PermissionUser check = ((PermissionManager) permPlugin).getUser(player.getName());
-			for(PermissionGroup group : check.getGroups()){
-				returnMe.add(group.getName());
-			}
-			return returnMe;
+		case VAULT:
+			return Arrays.asList(vaultPerms.getPlayerGroups(player.getWorld().getName(), player.getName()));
 		case NIJIKOKUN:
 			return Arrays.asList(((PermissionHandler) permPlugin).getGroups(player.getWorld().getName(),player.getName()));
 		default:
-			return returnMe;
+			return new LinkedList<String>();
 		}
 	}
 	
-	public boolean isInGroup(Player player, String Group) {
+	public boolean isInGroup(Player player, String group) {
 		switch (pluginType){
-		case PEX:
-			PermissionUser check = ((PermissionManager) permPlugin).getUser(player.getName());
-			return check.inGroup(Group, player.getWorld().getName(), false);
+		case VAULT:
+			return vaultPerms.playerInGroup(player.getWorld().getName(), player.getName(), group);
 		case NIJIKOKUN:
-			return ((PermissionHandler) permPlugin).inSingleGroup(player.getWorld().getName(), player.getName(), Group);
+			return ((PermissionHandler) permPlugin).inSingleGroup(player.getWorld().getName(), player.getName(), group);
 		default:
 			return false;
 		}
 	}
 	
-	public boolean hasPermission(Player player, String Perm){
+	public boolean hasPermission(Player player, String perm){
 		switch (pluginType){
-		case PEX:
-			PermissionUser check = ((PermissionManager) permPlugin).getUser(player.getName());
-			return check.has(Perm);
+		case VAULT:
+			return vaultPerms.has(player.getWorld().getName(), player.getName(), perm);
 		case NIJIKOKUN:
-			return ((PermissionHandler) permPlugin).has(player, Perm);
+			return ((PermissionHandler) permPlugin).has(player, perm);
 		default:
-			return player.hasPermission(Perm);
+			return player.hasPermission(perm);
 		}
 	}
 }

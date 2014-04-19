@@ -1,6 +1,7 @@
 package com.reil.bukkit.rTriggers.listener;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -60,11 +61,13 @@ public class CommandListener implements Listener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
 
-        for(CommandData data : commandMap.get(command)) {
+        HashSet <String> alreadyDispatched = new HashSet <String>(); 
+		for(CommandData data : commandMap.get(command)) {
         	if(data.match(numParams)) {
-        		if(plugin.dispatcher.dispatchEvents(player, data.options, replaceTheseArray, withTheseArray)
-        				&& data.override) {
-        			event.setCancelled(true);
+        		if (alreadyDispatched.contains(data.options)) continue;
+        		alreadyDispatched.add(data.options);
+        		if(plugin.dispatcher.dispatchEvents(player, data.options, replaceTheseArray, withTheseArray)) {
+        			if (data.override) event.setCancelled(true);
         		}
         	}
         }
@@ -87,15 +90,18 @@ public class CommandListener implements Listener {
 		String [] replaceTheseArray = replaceThese.toArray(new String[replaceThese.size()]);
 		String [] withTheseArray = withThese.toArray(new String[withThese.size()]);
         
+		HashSet<String> alreadyDispatched = new HashSet<String>();
         for(CommandData data : commandMap.get(command)){
         	if(data.match(numParams))
         	{
-        		if(plugin.dispatcher.dispatchEvents(data.options, replaceTheseArray, withTheseArray)
-        				&& data.override){
+        		if (alreadyDispatched.contains(data.options)) continue;
+        		alreadyDispatched.add(data.options);
+        		if(plugin.dispatcher.dispatchEvents(data.options, replaceTheseArray, withTheseArray))
+				{
         			// We can't override console commands, so instead,
         			// we can set this to a console command that we CAN
         			// intercept.
-        			event.setCommand("rTriggers");
+        			if (data.override) event.setCommand("rTriggers");
         		}
         	}
         }

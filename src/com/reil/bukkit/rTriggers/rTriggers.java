@@ -70,17 +70,16 @@ public class rTriggers extends JavaPlugin {
         grabPlugins(manager);
         commandListener.clearMaps();
         
-        dispatcher = new Dispatcher();
-
-        
         // - Loading the rTriggers.properties file.
         // - picking out and handling messages with onload and limit options.
         // - Picking out permissions that trigger.
+        HashMap <String, HashSet<String>> optionsMap = new HashMap<String,HashSet<String>>();
+        List<String> permissionTriggerers = new LinkedList<String>();
 		try {
-			largestDelay = processOptions(Messages.load());
+			largestDelay = processOptions(Messages.load(), optionsMap);
 			for (String key : Messages.getKeys()){
 				if (key.startsWith("<<hasperm|") || key.startsWith("not|<<hasperm|")){
-					dispatcher.permissionTriggerers.add(key.substring(key.lastIndexOf("|") + 1,key.length() - 2));
+					permissionTriggerers.add(key.substring(key.lastIndexOf("|") + 1,key.length() - 2));
 				}
 			}
 		} catch (Exception e) {
@@ -88,9 +87,11 @@ public class rTriggers extends JavaPlugin {
 		}
 		generateTimers(Messages);
 		
+		dispatcher = new Dispatcher(optionsMap, permissionTriggerers);
+		
 		
 		// Set up the database if needed (only needed for delays)
-		if (dispatcher.optionsMap.containsKey("delay")) {
+		if (optionsMap.containsKey("delay")) {
 	        try {
 	            getDatabase().find(TriggerLimit.class).findRowCount();
 	        } catch (PersistenceException ex) {
@@ -151,7 +152,7 @@ public class rTriggers extends JavaPlugin {
 	 * Goes through each message in messages[] and registers events that it sees in each.
 	 * @param messages
 	 */
-	public int processOptions(String[] messages){
+	public int processOptions(String[] messages, Map <String, HashSet<String>> optionsMap){
 		int largestLimit = 0;
 		if (registered) return 0;
 		else registered = true;
@@ -192,17 +193,17 @@ public class rTriggers extends JavaPlugin {
 				} else if (option.startsWith("onconsole|")) {
 					commandListener.addConsoleCommand(option);
 				}
-				if(!dispatcher.optionsMap.containsKey(option)) {
-					dispatcher.optionsMap.put(option, new HashSet<String>());
+				if(!optionsMap.containsKey(option)) {
+					optionsMap.put(option, new HashSet<String>());
 				}
-				dispatcher.optionsMap.get(option).add(message);
+				optionsMap.get(option).add(message);
 			}
 		}
 		return largestLimit * 1000;
 	}
 
 	/**
-	 *  Checks to see if any rTriggers-supported plugins	 have already been loaded.
+	 *  Checks to see if any rTriggers-supported plugins have already been loaded.
 	 *  Registers rTriggers with already-loaded plugins it finds.
 	 */
 	public void grabPlugins(PluginManager manager) {

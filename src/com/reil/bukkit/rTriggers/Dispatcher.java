@@ -2,7 +2,6 @@ package com.reil.bukkit.rTriggers;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -31,10 +30,10 @@ public class Dispatcher {
 		
 	public Map <String, HashSet<String>> optionsMap;
 	
-	public Dispatcher() {
+	public Dispatcher( Map <String, HashSet<String>> optionsMap, List<String> permissionTriggerers) {
 		limitTracker = new LimitTracker();
-		optionsMap = new HashMap<String, HashSet<String>>();
-		permissionTriggerers = new LinkedList<String>();
+		this.optionsMap = optionsMap;
+		this.permissionTriggerers = permissionTriggerers;
 	}
    /**
     * Looks through all of the messages,
@@ -83,13 +82,13 @@ public class Dispatcher {
 			/**************************
 			 *  Tag replacement end! */
 			
-			sendMessageCheckDelay(triggerer, fullMessage, message);
+			sendMessageAfterDelay(triggerer, fullMessage, message);
 		}
 		return !sendThese.isEmpty();
 	}
 	
 	// Message has had the 
-	public void sendMessageCheckDelay(Player triggerer, String fullMessage, String message) {
+	public void sendMessageAfterDelay(Player triggerer, String fullMessage, String message) {
 		// Ship out the message.  If it has a delay on it, put it on the scheduler
 		String[] split = fullMessage.split(colonSplit, 3);
 		if (!optionsMap.containsKey("delay") || !optionsMap.get("delay").contains(fullMessage)) {

@@ -20,7 +20,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 import com.nijikokun.register.payment.Methods;
-import com.reil.bukkit.rParser.rParser;
 
 public class Formatter {
 	/*
@@ -48,7 +47,7 @@ public class Formatter {
 		String hour24 = String.format("%tH", time);
 		String [] replace = {"(?<!\\\\)@", "(?<!\\\\)&", "<<color>>","\\\\&", "\\\\@", "<<time>>"          ,"<<time\\|24>>"        ,"<<hour>>", "<<minute>>", "<<player-count>>"};
 		String [] with    = {"\n§f"      , "§"         , "§"        ,"&"    , "@"    , hour + ":" + minute,hour24 + ":" + minute  , hour     , minute      , Integer.toString(Bukkit.getServer().getOnlinePlayers().length)};
-		message = rParser.replaceWords(message, replace, with);
+		message = replaceWords(message, replace, with);
 		return message;
 	}
 
@@ -114,7 +113,7 @@ public class Formatter {
 			}
 			String [] replace = {"<<player-list>>", "<<sleep-list>>", "<<nosleep-list>>"};
 			String [] with    = {list.toString()  , sleepList.toString(), notSleepList.toString()};
-			message = rParser.replaceWords(message, replace, with);
+			message = replaceWords(message, replace, with);
 		}
 		return message;
 	}
