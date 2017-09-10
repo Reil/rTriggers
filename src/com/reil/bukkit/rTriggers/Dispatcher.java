@@ -132,6 +132,7 @@ public class Dispatcher {
 		
 		/* Build set of message candidates */
 		Set<String> sendThese = new LinkedHashSet<String>();
+		Set<String> removeThese = new LinkedHashSet<String>();
 		for (String groupName : groupArray)
 			if(rTriggers.plugin.Messages.keyExists(groupName)) sendThese.addAll(Arrays.asList(rTriggers.plugin.Messages.getStrings(groupName)));
 		if (triggerer != null){
@@ -139,14 +140,14 @@ public class Dispatcher {
 				String permString = "<<hasperm|" + permission + ">>";
 				if(rTriggers.plugin.permAdaptor.hasPermission(triggerer,permission)) {
 					if (rTriggers.plugin.Messages.keyExists(permString)) sendThese.addAll(Arrays.asList(rTriggers.plugin.Messages.getStrings(permString)));
-				} else {
-					if (rTriggers.plugin.Messages.keyExists("not|" + permString)) sendThese.addAll(Arrays.asList(rTriggers.plugin.Messages.getStrings("not|" + permString)));
+					if (rTriggers.plugin.Messages.keyExists("not|" + permString)) removeThese.addAll(Arrays.asList(rTriggers.plugin.Messages.getStrings("not|" + permString)));
 				}
 			}
 		}
 		
 		// Remove candidates that aren't for this option
 		sendThese.retainAll(optionsMap.get(option));
+		sendThese.removeAll(removeThese);
 		return sendThese;
 	}
 

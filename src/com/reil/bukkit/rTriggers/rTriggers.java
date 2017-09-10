@@ -12,6 +12,11 @@ import org.bukkit.plugin.java.*;
 // Plugin hooking
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+
+import com.avaje.ebean.Ebean;
+import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.EbeanServerFactory;
+import com.avaje.ebean.config.ServerConfig;
 import com.ensifera.animosity.craftirc.CraftIRC;
 
 import com.reil.bukkit.rTriggers.listener.CommandListener;
@@ -96,7 +101,6 @@ public class rTriggers extends JavaPlugin {
 	            getDatabase().find(TriggerLimit.class).findRowCount();
 	        } catch (PersistenceException ex) {
 	            System.out.println("[rTriggers] Setting up persistence...");
-	            installDDL();
 	        }
 			log.info("[rTriggers] Cleaned " + dispatcher.limitTracker.cleanEntriesOlderThan(largestDelay) + " entries from delay persistence table");
 		}
@@ -141,12 +145,6 @@ public class rTriggers extends JavaPlugin {
 		return true;
 	}
 
-	@Override
-	public List<Class<?>> getDatabaseClasses() {
-	    List<Class<?>> list = new ArrayList<Class<?>>();
-	    list.add(TriggerLimit.class);
-	    return list;
-	}
 
 	/**
 	 * Goes through each message in messages[] and registers events that it sees in each.
@@ -260,5 +258,20 @@ public class rTriggers extends JavaPlugin {
 			}
 		}
 		if (messages.keyExists("<<timer>>")) log.log(Level.WARNING, "[rTriggers] Using old timer format! Please update to new version.");
+	}
+	
+	public EbeanServer getDatabase() {
+		EbeanServer database = Ebean.getServer("rTriggers");
+		
+		if(database == null){
+			ServerConfig config = new ServerConfig();
+			config.setName("rTriggers");
+			config.setDefaultServer(true);
+			config.addClass(TriggerLimit.class);
+			
+			database = EbeanServerFactory.create(config);
+		}
+		
+		return database;
 	}
 }

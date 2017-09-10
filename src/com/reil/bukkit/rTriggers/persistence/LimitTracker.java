@@ -5,6 +5,8 @@ import java.util.List;
 import org.bukkit.entity.Player;
 
 import com.avaje.ebean.EbeanServer;
+import com.avaje.ebean.EbeanServerFactory;
+import com.avaje.ebean.config.ServerConfig;
 import com.reil.bukkit.rTriggers.rTriggers;
 
 public class LimitTracker {
@@ -12,7 +14,8 @@ public class LimitTracker {
 	EbeanServer database;
 	public LimitTracker () {
 		plugin = rTriggers.plugin;
-		database = plugin.getDatabase();
+		
+		plugin.getDatabase();
 	}
 	 /*
 	 * Checks to see if:

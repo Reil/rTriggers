@@ -1,7 +1,7 @@
 name: rTriggers
 author: Reil
 main: com.reil.bukkit.rTriggers.rTriggers
-version: 2.7.2
+version: 2.7.4a
 database: true
 softdepend: [Permissions, PermissionsEx, Register]
 commands:
